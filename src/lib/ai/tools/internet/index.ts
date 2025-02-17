@@ -1,7 +1,7 @@
 import "server-only";
 
 import { Tool } from "ai";
-import { fetchTool, multiFetchTool, searchTool } from "./search";
+import { fetchTool, multiFetchTool } from "./search";
 
 type WebToolNames = "fetch" | "search" | "multiFetch";
 
@@ -10,7 +10,7 @@ export const getWebTools = (config?: {
 }): Partial<Record<WebToolNames, Tool>> => {
     const tools: Partial<Record<WebToolNames, Tool>> = {
         fetch: fetchTool,
-        search: searchTool,
+
         multiFetch: multiFetchTool,
     };
 

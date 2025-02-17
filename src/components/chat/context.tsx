@@ -17,7 +17,6 @@ interface ChatContextType {
 
   messages: UIMessage[];
   input: string;
-  setInput: React.Dispatch<React.SetStateAction<string>>;
   handleInputChange: (
     e:
       | React.ChangeEvent<HTMLInputElement>
@@ -58,8 +57,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     addToolResult,
     stop,
     status,
-
-    setInput,
   } = useChat({
     onError(error) {
       setError(error.message);
@@ -78,8 +75,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       addToolResult,
       status,
       stop,
-
-      setInput,
     };
   }, [
     messages,
@@ -92,8 +87,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
 
     status,
     stop,
-
-    setInput,
   ]);
 
   return (

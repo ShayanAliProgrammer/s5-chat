@@ -1,7 +1,6 @@
 import { streamText } from 'ai';
 import models from '~/lib/ai/models';
 import { SYSTEM_PROMPT } from '~/lib/ai/prompts/system';
-import { getWebTools } from '~/lib/ai/tools/internet';
 import { calculatorTools } from '~/lib/ai/tools/math';
 
 export const maxDuration = 30; // Allow streaming response upto 30 seconds
@@ -13,26 +12,21 @@ export async function POST(req: Request) {
         model: models['gemini-2.0-flash-lite-preview-02-05 (Google)'],
         messages,
         toolCallStreaming: true,
+        temperature: 0.7,
+        // maxTokens: 1000,
+        topK: 5,
+
         maxSteps: 10,
 
         system: SYSTEM_PROMPT,
 
 
         tools: {
-            ...getWebTools(),
+            // disable web tools for now, we have to work on these tools to make them better
+            // ...getWebTools(),
             ...calculatorTools()
         },
 
-
-        // async onFinish({ response }) {
-        //   await saveChat({
-        //     id,
-        //     messages: appendResponseMessages({
-        //       messages,
-        //       responseMessages: response.messages,
-        //     }),
-        //   });
-        // },
     });
 
     return result.toDataStreamResponse();

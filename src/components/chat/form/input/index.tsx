@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { CornerDownLeftIcon } from "lucide-react";
+import { CornerDownLeftIcon, SquareIcon } from "lucide-react";
 import React, { useEffect, useRef } from "react";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
@@ -10,10 +10,13 @@ import { cn } from "~/lib/utils";
 interface ChatFormInputProps {
   value: string; // initial value (used only on mount)
 
-  setInput: React.Dispatch<React.SetStateAction<string>>;
+  status: "error" | "submitted" | "streaming" | "ready";
+
+  stop: () => void;
 
   // onChange will be called (debounced) on input
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  setError: (err: string | null) => void;
 }
 
 const MAX_HEIGHT = 164;
@@ -40,7 +43,7 @@ const AnimatedPlaceholder = React.memo(function AnimatedPlaceholder({
 });
 
 const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
-  function ChatFormInputInner({ value, onChange, setInput }) {
+  function ChatFormInputInner({ value, onChange, status, stop, setError }) {
     const submitBtnRef = useRef<HTMLButtonElement | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -49,13 +52,15 @@ const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
       const textarea = textareaRef.current;
       if (!textarea) return;
       const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-          e.preventDefault();
-          // @ts-expect-error ignore type check for next line
-          e.currentTarget.value = "";
-          submitBtnRef.current?.click();
-        }
+        setTimeout(() => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            submitBtnRef.current?.click();
+            setError(null);
+          }
+        }, 10);
       };
+
       textarea.addEventListener("keydown", handleKeyDown);
       return () => {
         textarea.removeEventListener("keydown", handleKeyDown);
@@ -109,20 +114,35 @@ const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
 
             <div className="h-12 w-full rounded-b-xl bg-muted dark:bg-muted">
               <div className="!ml-auto w-max pr-3">
-                <Button
-                  type="submit"
-                  ref={submitBtnRef}
-                  size="icon"
-                  onClick={() =>
-                    textareaRef.current
-                      ? (textareaRef.current.value = "")
-                      : null
-                  }
-                  variant={value ? "default" : "outline"}
-                  className={cn("justify-center rounded-full")}
-                >
-                  <CornerDownLeftIcon />
-                </Button>
+                <AnimatePresence>
+                  {status == "streaming" ? (
+                    <Button
+                      type="button"
+                      size="icon"
+                      onClick={stop}
+                      className={cn("justify-center rounded-full")}
+                    >
+                      <SquareIcon />
+                    </Button>
+                  ) : (
+                    <Button
+                      type="submit"
+                      ref={submitBtnRef}
+                      size="icon"
+                      onClick={() => {
+                        setError(null);
+
+                        if (textareaRef.current) {
+                          textareaRef.current.value = "";
+                        }
+                      }}
+                      variant={value ? "default" : "outline"}
+                      className={cn("justify-center rounded-full")}
+                    >
+                      <CornerDownLeftIcon />
+                    </Button>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </div>
@@ -137,7 +157,7 @@ const ChatFormInput = React.memo(
   function ChatFormInput(props: ChatFormInputProps) {
     return <ChatFormInputInner {...props} />;
   },
-  (prev, next) => prev.value === next.value && prev.search === next.search,
+  (prev, next) => prev.value === next.value && prev.status === next.status,
 );
 
 export default ChatFormInput;

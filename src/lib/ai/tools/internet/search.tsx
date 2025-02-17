@@ -62,32 +62,6 @@ export const fetchTool = tool({
   },
 });
 
-export const searchTool = tool({
-  description:
-    "Perform a Google search for the provided query and return the results in markdown format.",
-  parameters: z.object({
-    query: z.string().describe("A search query to look up on Google."),
-  }),
-  execute: async ({ query }) => {
-    const markdown = await (
-      await fetch("https://trevorfox.com/tool-actions/url_to_markdown.php", {
-        method: "POST",
-        body: JSON.stringify({
-          url: `https://google.com/search?q=${encodeURI(query)}`,
-          include_title: false,
-          include_meta_description: false,
-          include_nav: true,
-          include_header: true,
-          include_footer: false,
-          include_aside: true,
-          include_json_ld: false,
-        }),
-      })
-    ).text();
-    return markdown;
-  },
-});
-
 export const multiFetchTool = tool({
   description:
     "Fetch content from multiple webpage URLs concurrently and return their markdown content.",
@@ -108,22 +82,7 @@ export const multiFetchTool = tool({
     }
 
     async function fetchUrl(url: string): Promise<string> {
-      const response = await fetch(
-        "https://trevorfox.com/tool-actions/url_to_markdown.php",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            url,
-            include_title: false,
-            include_meta_description: false,
-            include_nav: true,
-            include_header: true,
-            include_footer: false,
-            include_aside: true,
-            include_json_ld: false,
-          }),
-        },
-      );
+      const response = await fetch(url);
       return await response.text();
     }
 

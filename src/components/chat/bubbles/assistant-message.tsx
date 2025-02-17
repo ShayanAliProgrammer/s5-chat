@@ -143,9 +143,6 @@ const AssistantMessageBubble = React.memo(
     message: UIMessage;
     addToolResult: (args: { toolCallId: string; result: any }) => void;
   }) {
-    // Use a throttled version of the message to avoid re-rendering on every chunk.
-    // const throttledMessage = useThrottledValue(message, 1);
-
     return (
       <div className="mr-auto w-full max-w-full p-5">
         <div className="prose !max-w-full dark:prose-invert">

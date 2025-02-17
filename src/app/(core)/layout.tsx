@@ -12,7 +12,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <BrowserRouter>
-      <div className="flex flex-col md:flex-row">
+      <div className="flex size-full flex-col md:flex-row">
         <SidebarProvider className="!h-max md:!h-full md:!w-max">
           <AppSidebar />
 
@@ -21,7 +21,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </SidebarProvider>
 
-        <main className="size-full max-h-[calc(100vh_-_61px)] overflow-auto md:!h-screen md:max-h-[100vh]">
+        <main className="size-full max-h-[calc(100vh_-_61px)] md:h-screen">
           {children}
         </main>
       </div>

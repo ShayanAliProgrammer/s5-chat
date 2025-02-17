@@ -6,19 +6,23 @@ import UserMessageBubble from "./bubbles/user-message";
 import { useChatContext } from "./context";
 
 const Messages = React.memo(function Messages() {
-  const { messages, error, addToolResult } = useChatContext();
+  const { messages, addToolResult, error } = useChatContext();
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // When messages change, scroll to bottom smoothly.
+  // Debounce smooth scrolling to the bottom when messages change.
   useEffect(() => {
-    if (bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: "smooth" });
-    }
+    const timeoutId = setTimeout(() => {
+      if (bottomRef.current) {
+        bottomRef.current.scrollIntoView({ behavior: "smooth" });
+      }
+    }, 100); // Adjust debounce delay as needed (e.g., 100ms)
+
+    return () => clearTimeout(timeoutId);
   }, [messages]);
 
   return (
     <>
-      <div className="mx-auto flex !h-full w-full flex-col gap-3 overflow-auto px-3 py-3">
+      <div className="mx-auto mb-auto flex !size-full min-h-[calc(100vh_-_164px)] flex-col gap-3 overflow-auto px-3 py-4">
         {messages.map((message) => (
           <div key={message.id} className="mx-auto w-full max-w-4xl">
             {message.role === "user" ? (
@@ -31,9 +35,17 @@ const Messages = React.memo(function Messages() {
             )}
           </div>
         ))}
-        {error && <p className="text-destructive">{error}</p>}
+
+        {error && (
+          <div className="mx-auto w-full max-w-4xl">
+            <div className="mr-auto max-w-xl rounded-md border border-destructive bg-destructive/40 p-5 text-destructive-foreground">
+              <p>{error}</p>
+            </div>
+          </div>
+        )}
+
+        <div ref={bottomRef} />
       </div>
-      <div ref={bottomRef} className="mt-10" />
     </>
   );
 });

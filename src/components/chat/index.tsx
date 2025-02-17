@@ -7,7 +7,7 @@ import Messages from "./messages";
 
 const Chat = React.memo(function Chat() {
   return (
-    <div className="flex !h-full w-full flex-col">
+    <div className="grid !size-full place-items-center">
       <Messages />
       <ChatForm />
     </div>

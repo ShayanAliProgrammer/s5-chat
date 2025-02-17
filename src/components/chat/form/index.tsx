@@ -5,7 +5,8 @@ import { useChatContext } from "../context";
 import ChatFormInput from "./input";
 
 const ChatForm: React.FC = React.memo(function ChatForm() {
-  const { input, setInput, handleInputChange, handleSubmit } = useChatContext();
+  const { input, handleInputChange, handleSubmit, status, stop, setError } =
+    useChatContext();
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     handleSubmit(e);
@@ -20,7 +21,9 @@ const ChatForm: React.FC = React.memo(function ChatForm() {
         key="chat-form-input"
         value={input}
         onChange={handleInputChange}
-        setInput={setInput}
+        status={status}
+        stop={stop}
+        setError={setError}
       />
     </form>
   );

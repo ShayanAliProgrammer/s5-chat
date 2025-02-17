@@ -46,7 +46,7 @@ export default function ChatLink({ id }: { id: string }) {
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <p
-              className="absolute -right-full flex cursor-pointer justify-end rounded-md bg-gradient-to-r from-transparent to-muted p-2 transition-all hover:bg-destructive hover:!from-background/60 hover:!to-background hover:text-destructive-foreground group-hover/chat-link:right-0.5"
+              className="absolute -right-full flex cursor-pointer justify-end rounded-md bg-gradient-to-r from-transparent to-muted p-2 transition-all hover:!from-destructive hover:!to-destructive hover:text-destructive-foreground group-hover/chat-link:right-0.5"
               role="button"
             >
               <XIcon />
