@@ -7,6 +7,12 @@ export const env = createEnv({
    * isn't built with invalid env vars.
    */
   server: {
+    GOOGLE_GENERATIVE_AI_API_KEY: z.string(),
+    GROQ_API_KEY: z.string(),
+    CEREBRAS_API_KEY: z.string(),
+    SAMBANOVA_API_KEY: z.string(),
+    SAMBANOVA_BASE_URL: z.string().url(),
+
     NODE_ENV: z.enum(["development", "test", "production"]),
   },
 
@@ -24,8 +30,14 @@ export const env = createEnv({
    * middlewares) or client-side so we need to destruct manually.
    */
   runtimeEnv: {
+    GOOGLE_GENERATIVE_AI_API_KEY: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+    GROQ_API_KEY: process.env.GROQ_API_KEY,
+    CEREBRAS_API_KEY: process.env.CEREBRAS_API_KEY,
+    SAMBANOVA_API_KEY: process.env.SAMBANOVA_API_KEY,
+
+    SAMBANOVA_BASE_URL: process.env.SAMBANOVA_BASE_URL,
+
     NODE_ENV: process.env.NODE_ENV,
-    // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
