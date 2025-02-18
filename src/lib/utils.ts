@@ -21,3 +21,12 @@ export function getErrorMessage(error: unknown): string {
 
   return 'Something unexpected happend, while performing this action';
 }
+
+export function debounce(func: Function, wait: number) {
+  let timeout: NodeJS.Timeout;
+
+  return function executedFunction(...args: any[]) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(args), wait);
+  };
+}

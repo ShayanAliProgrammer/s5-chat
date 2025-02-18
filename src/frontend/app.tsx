@@ -9,17 +9,14 @@ const WelcomePage = React.memo(
   dynamic(() => import("./features/welcome-page")),
 );
 
-const App = React.memo(
-  React.cache(function App() {
-    return (
-      <>
-        <Routes>
-          <Route path="chat/:chatID" element={<ChatPage />} />
-          <Route path="" element={<WelcomePage />} />
-        </Routes>
-      </>
-    );
-  }),
-);
-
+const App = React.memo(function App() {
+  return (
+    <>
+      <Routes>
+        <Route path="chat/:chatId" element={<ChatPage />} />
+        <Route path="" element={<WelcomePage />} />
+      </Routes>
+    </>
+  );
+});
 export default App;

@@ -21,7 +21,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </SidebarProvider>
 
-        <main className="size-full max-h-[calc(100vh_-_61px)] md:h-screen">
+        <main className="size-full max-h-[calc(100vh_-_61px)] overflow-x-hidden md:max-h-screen">
           {children}
         </main>
       </div>

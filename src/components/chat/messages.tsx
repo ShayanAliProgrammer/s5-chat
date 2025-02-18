@@ -6,47 +6,46 @@ import UserMessageBubble from "./bubbles/user-message";
 import { useChatContext } from "./context";
 
 const Messages = React.memo(function Messages() {
-  const { messages, addToolResult, error } = useChatContext();
+  const { messages, error, status } = useChatContext();
+
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Debounce smooth scrolling to the bottom when messages change.
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (bottomRef.current) {
-        bottomRef.current.scrollIntoView({ behavior: "smooth" });
-      }
-    }, 100); // Adjust debounce delay as needed (e.g., 100ms)
+    if (bottomRef.current && status == "streaming") {
+      const timeoutId = setTimeout(() => {
+        if (bottomRef.current) {
+          bottomRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 100); // Adjust debounce delay as needed (e.g., 100ms)
 
-    return () => clearTimeout(timeoutId);
+      return () => clearTimeout(timeoutId);
+    }
   }, [messages]);
 
   return (
-    <>
-      <div className="mx-auto mb-auto flex !size-full min-h-[calc(100vh_-_164px)] flex-col gap-3 overflow-auto px-3 py-4">
-        {messages.map((message) => (
-          <div key={message.id} className="mx-auto w-full max-w-4xl">
-            {message.role === "user" ? (
-              <UserMessageBubble message={message} />
-            ) : (
-              <AssistantMessageBubble
-                addToolResult={addToolResult}
-                message={message}
-              />
-            )}
+    <div className="flex min-h-[calc(100vh_-_201px)] w-full flex-col gap-3 px-3 pb-5 pt-4 md:min-h-[calc(100vh_-_140px)] lg:pb-10">
+      {messages?.map((message) => (
+        <div
+          key={message.id}
+          className="mx-auto w-full md:!max-w-2xl lg:!max-w-4xl"
+        >
+          {message.role === "user" ? (
+            <UserMessageBubble message={message} />
+          ) : (
+            <AssistantMessageBubble message={message} />
+          )}
+        </div>
+      ))}
+      {error && (
+        <div className="mx-auto w-full max-w-4xl">
+          <div className="mr-auto max-w-xl rounded-md border border-destructive bg-destructive/40 p-5 text-destructive-foreground">
+            <p>{error}</p>
           </div>
-        ))}
+        </div>
+      )}
 
-        {error && (
-          <div className="mx-auto w-full max-w-4xl">
-            <div className="mr-auto max-w-xl rounded-md border border-destructive bg-destructive/40 p-5 text-destructive-foreground">
-              <p>{error}</p>
-            </div>
-          </div>
-        )}
-
-        <div ref={bottomRef} />
-      </div>
-    </>
+      <div ref={bottomRef} />
+    </div>
   );
 });
 

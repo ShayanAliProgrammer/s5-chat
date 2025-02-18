@@ -1,14 +1,15 @@
 "use client";
 
+import { useLiveQuery } from "dexie-react-hooks";
 import { MessageSquarePlusIcon } from "lucide-react";
 import React from "react";
-import { Link } from "react-router";
+import { useNavigate } from "react-router-dom";
+import { dxdb } from "~/lib/db/dexie";
 import ProfileButton from "../profile/button";
 import { Button } from "../ui/button";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarTrigger,
 } from "../ui/sidebar";
@@ -23,6 +24,17 @@ export const AppSidebarTrigger = React.memo(function ToggleSidebar() {
 });
 
 export default React.memo(function AppSidebar() {
+  const navigate = useNavigate();
+
+  // Use useLiveQuery to automatically fetch and update the chat list.
+  const chats = useLiveQuery(() => dxdb.getAllChats(), []);
+
+  // Function to create a new chat and redirect the user
+  const handleNewChat = async () => {
+    const newChat = await dxdb.createChat(crypto.randomUUID());
+    navigate(`/chat/${newChat.id}`);
+  };
+
   return (
     <div className="!h-max w-full md:z-20 md:w-max">
       <Sidebar>
@@ -30,37 +42,27 @@ export default React.memo(function AppSidebar() {
           <SidebarHeader>
             <AppSidebarTrigger />
 
-            <Button asChild>
-              <Link to="/">
-                <MessageSquarePlusIcon />
-                New Chat
-              </Link>
+            {/* Button to create new chat and redirect */}
+            <Button onClick={handleNewChat} variant="outline">
+              <MessageSquarePlusIcon />
+              New Chat
             </Button>
           </SidebarHeader>
 
-          <ul className="flex h-full max-h-full flex-col gap-1 overflow-auto border-b border-t px-2 pb-5 pt-3 *:flex-shrink-0">
-            <ChatLink id="xyz" />
-            <ChatLink id="zyx" />
-          </ul>
-
-          <SidebarFooter>
-            <Button size="lg" variant="outline">
-              Account
-            </Button>
-          </SidebarFooter>
+          <div className="flex h-full max-h-full flex-col gap-1 overflow-y-auto overflow-x-hidden border-b border-t px-2 pb-5 pt-3 *:flex-shrink-0">
+            {chats && chats.length > 0 ? (
+              chats.map((chat) => (
+                <ChatLink key={chat.id} id={chat.id} title={chat.title} />
+              ))
+            ) : (
+              <div>No chats available</div>
+            )}
+          </div>
         </SidebarContent>
       </Sidebar>
 
       <header className="bg-backgound mb-auto flex !w-full items-center justify-between gap-1 border-b p-5 py-3 md:hidden">
         <AppSidebarTrigger />
-
-        <p className="line-clamp-1 max-w-[50vw] text-muted-foreground">
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Rem eaque
-          cupiditate minus officiis repellendus! Corrupti cumque quae
-          consectetur. Consectetur sapiente corporis beatae commodi ab earum
-          nisi itaque perspiciatis accusamus voluptates!
-        </p>
-
         <ProfileButton />
       </header>
     </div>

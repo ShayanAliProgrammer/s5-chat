@@ -1,3 +1,4 @@
+// ChatFormInput.tsx
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
@@ -8,13 +9,9 @@ import { Textarea } from "~/components/ui/textarea";
 import { cn } from "~/lib/utils";
 
 interface ChatFormInputProps {
-  value: string; // initial value (used only on mount)
-
+  value: string;
   status: "error" | "submitted" | "streaming" | "ready";
-
   stop: () => void;
-
-  // onChange will be called (debounced) on input
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   setError: (err: string | null) => void;
 }
@@ -47,7 +44,25 @@ const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
     const submitBtnRef = useRef<HTMLButtonElement | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-    // Attach keydown listener via useEffect
+    // Auto-resize effect
+    useEffect(() => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      const handleResize = () => {
+        textarea.style.height = "auto";
+        textarea.style.height = `${Math.min(textarea.scrollHeight, MAX_HEIGHT)}px`;
+      };
+
+      handleResize();
+      textarea.addEventListener("input", handleResize);
+
+      return () => {
+        textarea.removeEventListener("input", handleResize);
+      };
+    }, [value]);
+
+    // Keydown handler for Enter
     useEffect(() => {
       const textarea = textareaRef.current;
       if (!textarea) return;
@@ -65,31 +80,11 @@ const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
       return () => {
         textarea.removeEventListener("keydown", handleKeyDown);
       };
-    }, []);
-
-    // Attach a debounced input listener via useEffect
-    useEffect(() => {
-      const textarea = textareaRef.current;
-      if (!textarea) return;
-      let debounceTimeout: ReturnType<typeof setTimeout>;
-      const handleInput = (e: Event) => {
-        if (debounceTimeout) clearTimeout(debounceTimeout);
-        debounceTimeout = setTimeout(() => {
-          // Pass a synthetic event to parent's onChange
-          // @ts-expect-error ignore typecheck for next line
-          onChange(e as React.ChangeEvent<HTMLTextAreaElement>);
-        }, 10);
-      };
-      textarea.addEventListener("input", handleInput);
-      return () => {
-        clearTimeout(debounceTimeout);
-        textarea.removeEventListener("input", handleInput);
-      };
-    }, [onChange]);
+    }, [setError]);
 
     return (
-      <div className="w-full py-5">
-        <div className="relative mx-auto w-full max-w-3xl rounded-[22px] border border-border/5 p-1">
+      <div className="w-full px-1">
+        <div className="relative mx-auto w-full max-w-5xl rounded-[22px] border border-border/5">
           <div className="relative flex flex-col rounded-2xl border border-border/5 bg-muted">
             <div
               className="overflow-y-auto"
@@ -97,15 +92,12 @@ const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
             >
               <div className="relative">
                 <Textarea
-                  // Use defaultValue so that the textarea is uncontrolled.
                   defaultValue={value}
                   placeholder=""
                   className="resize-none rounded-2xl rounded-b-none border-none bg-muted px-4 py-3 leading-[1.2] focus-visible:ring-0"
                   ref={textareaRef}
+                  onChange={onChange}
                 />
-                {/* For an uncontrolled textarea, you might need additional logic to show the placeholder.
-                    Here we simply check the initial value. */}
-
                 <div className="absolute left-4 top-3">
                   <AnimatedPlaceholder value={value} />
                 </div>
@@ -114,35 +106,14 @@ const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
 
             <div className="h-12 w-full rounded-b-xl bg-muted dark:bg-muted">
               <div className="!ml-auto w-max pr-3">
-                <AnimatePresence>
-                  {status == "streaming" ? (
-                    <Button
-                      type="button"
-                      size="icon"
-                      onClick={stop}
-                      className={cn("justify-center rounded-full")}
-                    >
-                      <SquareIcon />
-                    </Button>
-                  ) : (
-                    <Button
-                      type="submit"
-                      ref={submitBtnRef}
-                      size="icon"
-                      onClick={() => {
-                        setError(null);
-
-                        if (textareaRef.current) {
-                          textareaRef.current.value = "";
-                        }
-                      }}
-                      variant={value ? "default" : "outline"}
-                      className={cn("justify-center rounded-full")}
-                    >
-                      <CornerDownLeftIcon />
-                    </Button>
-                  )}
-                </AnimatePresence>
+                <SubmitButton
+                  value={value}
+                  status={status}
+                  submitBtnRef={submitBtnRef}
+                  setError={setError}
+                  textareaRef={textareaRef}
+                  stop={stop}
+                />
               </div>
             </div>
           </div>
@@ -152,12 +123,61 @@ const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
   },
 );
 
-// Wrap the inner component with React.memo. We compare only the "value" prop.
+const SubmitButton = React.memo(
+  function SubmitButton({
+    status,
+    submitBtnRef,
+    setError,
+    textareaRef,
+    value,
+    stop,
+  }: {
+    value: string;
+    status: "streaming" | "ready" | "submitted" | "error";
+    textareaRef: React.MutableRefObject<HTMLTextAreaElement | null>;
+    submitBtnRef: React.MutableRefObject<HTMLButtonElement | null>;
+    setError: (err: string | null) => void;
+    stop: () => void;
+  }) {
+    return (
+      <>
+        {status === "streaming" ? (
+          <Button
+            type="button"
+            size="icon"
+            onClick={stop}
+            className={cn("justify-center rounded-full")}
+          >
+            <SquareIcon />
+          </Button>
+        ) : (
+          <Button
+            type="submit"
+            ref={submitBtnRef}
+            size="icon"
+            onClick={() => {
+              setError(null);
+              if (textareaRef.current) {
+                textareaRef.current.value = "";
+              }
+            }}
+            variant={value ? "default" : "outline"}
+            className={cn("justify-center rounded-full")}
+          >
+            <CornerDownLeftIcon />
+          </Button>
+        )}
+      </>
+    );
+  },
+  (prev, next) => prev.status == next.status,
+);
+
 const ChatFormInput = React.memo(
   function ChatFormInput(props: ChatFormInputProps) {
     return <ChatFormInputInner {...props} />;
   },
-  (prev, next) => prev.value === next.value && prev.status === next.status,
+  (prev, next) => prev.status === next.status && prev.value === next.value,
 );
 
 export default ChatFormInput;

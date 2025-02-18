@@ -6,15 +6,16 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useReducer,
   useRef,
 } from "react";
+import { dxdb, Message } from "~/lib/db/dexie";
 
 interface ChatContextType {
   error: string | null;
   setError: (error: string | null) => void;
-
   messages: UIMessage[];
   input: string;
   handleInputChange: (
@@ -27,20 +28,17 @@ interface ChatContextType {
     chatRequestOptions?: any,
   ) => void;
   addToolResult: (args: { toolCallId: string; result: any }) => void;
-
-  // status and stop
   status: "error" | "submitted" | "streaming" | "ready";
   stop: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
-export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  // Use refs to store mutable values that we don't want to trigger re-renders
+export const ChatProvider: React.FC<{
+  children: React.ReactNode;
+  chatId: string;
+}> = ({ children, chatId }) => {
   const errorRef = useRef<string | null>(null);
-  // A reducer to force a re-render when these refs update
   const [, forceUpdate] = useReducer((x) => x + 1, 0);
 
   const setError = useCallback((error: string | null) => {
@@ -48,8 +46,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     forceUpdate();
   }, []);
 
-  // Use your chat hook. (Ensure its callbacks are memoized inside the hook or wrap them here.)
   const {
+    setMessages,
     messages,
     input,
     handleInputChange,
@@ -58,14 +56,69 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     stop,
     status,
   } = useChat({
+    id: chatId,
     onError(error) {
       setError(error.message);
     },
   });
 
-  // Memoize the context value. (Be cautious—if any value changes, all consumers will re-render.)
-  const contextValue = useMemo(() => {
-    return {
+  useEffect(() => {
+    (async () => {
+      const localMessages = await dxdb.getMessagesByChatId(chatId);
+      setMessages(
+        localMessages.map((message) => ({
+          // @ts-expect-error ignore typecheck for next line
+          content: String(message.parts[message.parts.length - 1]!.text),
+          parts: message.parts,
+          id: message.id,
+          role: message.role,
+          createdAt: message.createdAt,
+        })) as Message[],
+      );
+    })();
+  }, [chatId, setMessages]);
+
+  useEffect(() => {
+    stop();
+  }, [chatId, stop]); // Stop the stream when navigating to a different chat
+
+  useEffect(() => {
+    // Only update if there's at least one previous message (typically the one being updated)
+    if (messages.length > 1) {
+      const lastMessageIndex = messages.length - 1;
+      const lastMessage = messages[lastMessageIndex]!;
+      const { parts, content } = lastMessage;
+
+      // Only proceed if the last message has meaningful data
+      if (parts && content && (parts.length > 0 || content.trim())) {
+        (async () => {
+          // Retrieve the current chat record
+          const chat = await dxdb.chats.get(chatId);
+          if (chat && Array.isArray(chat.messages)) {
+            // Build the updated version of the changed message, filtering out unnecessary parts
+            const updatedMessage = {
+              chatId,
+              createdAt: lastMessage.createdAt ?? new Date(),
+              id: lastMessage.id,
+              parts: lastMessage.parts.filter(
+                (part) =>
+                  part.type === "text" || part.type === "tool-invocation",
+              ),
+              role: lastMessage.role,
+            };
+
+            // @ts-expect-error Update only the changed message in the array
+            chat.messages[lastMessageIndex] = updatedMessage;
+            await dxdb.chats.put(chat);
+          }
+        })();
+      }
+    }
+  }, [messages, chatId]);
+
+  // Memoize the context value to prevent unnecessary re-renders
+  const contextValue = useMemo(
+    () => ({
       error: errorRef.current,
       setError,
       messages,
@@ -75,19 +128,17 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       addToolResult,
       status,
       stop,
-    };
-  }, [
-    messages,
-    input,
-    handleInputChange,
-    handleSubmit,
-    addToolResult,
-    // While refs are mutable, forceUpdate ensures a re-render when their values change.
-    errorRef.current,
-
-    status,
-    stop,
-  ]);
+    }),
+    [
+      messages,
+      input,
+      handleInputChange,
+      handleSubmit,
+      addToolResult,
+      status,
+      stop,
+    ],
+  );
 
   return (
     <ChatContext.Provider value={contextValue}>{children}</ChatContext.Provider>

@@ -1,6 +1,6 @@
 import { type UIMessage } from "ai";
 import { CheckIcon } from "lucide-react";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import MarkdownRenderer from "~/components/markdown/renderer";
 import { MarkdownProvider } from "~/components/markdown/renderer/context";
 import {
@@ -9,23 +9,8 @@ import {
   DisclosureTrigger,
 } from "~/components/ui/disclosure";
 import { TextShimmer } from "~/components/ui/text-shimmer";
+import { Message } from "~/lib/db/dexie";
 import { cn } from "~/lib/utils";
-
-/** Custom hook that returns a throttled value. */
-function useThrottledValue<T>(value: T, delay: number): T {
-  const [throttledValue, setThrottledValue] = useState(value);
-  const lastValue = useRef(value);
-
-  useEffect(() => {
-    lastValue.current = value;
-    const handler = setTimeout(() => {
-      setThrottledValue(lastValue.current);
-    }, delay);
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-
-  return throttledValue;
-}
 
 // Helper to extract internal chain-of-thought from markdown text.
 function parseThinkTag(markdown: string): {
@@ -50,7 +35,12 @@ interface TextPartProps {
 }
 const TextPart = React.memo(
   function TextPart({ markdown }: TextPartProps) {
-    const { chainOfThought, visibleText } = parseThinkTag(markdown);
+    // Memoize parsing so it only recalculates when markdown changes.
+    const { chainOfThought, visibleText } = useMemo(
+      () => parseThinkTag(markdown),
+      [markdown],
+    );
+
     return (
       <>
         {chainOfThought && (
@@ -98,7 +88,7 @@ const ToolInvocationDisclosure = React.memo(
       const result = part.toolInvocation.result;
       const typeofResult = typeof result;
       const resultString = JSON.stringify(
-        typeofResult == "object" ? result : { result },
+        typeofResult === "object" ? result : { result },
         null,
         2,
       );
@@ -116,9 +106,7 @@ const ToolInvocationDisclosure = React.memo(
           <DisclosureContent>
             <div className="border-b-2 text-sm">
               <p>Tool Result:</p>
-              <MarkdownProvider
-                markdown={`\`\`\`json\n${resultString}\n\`\`\``}
-              >
+              <MarkdownProvider markdown={`\`\`\json\n${resultString}\n\`\`\``}>
                 <MarkdownRenderer />
               </MarkdownProvider>
             </div>
@@ -129,7 +117,13 @@ const ToolInvocationDisclosure = React.memo(
       return <TextShimmer as="p">{part.toolInvocation.toolName}</TextShimmer>;
     }
   },
-  (prev, next) => prev.part === next.part,
+  (prev, next) => {
+    // Avoid re-rendering if the toolInvocation details haven't changed.
+    return (
+      JSON.stringify(prev.part.toolInvocation) ===
+      JSON.stringify(next.part.toolInvocation)
+    );
+  },
 );
 
 // ---------------------------
@@ -138,15 +132,16 @@ const ToolInvocationDisclosure = React.memo(
 const AssistantMessageBubble = React.memo(
   function AssistantMessageBubble({
     message,
-    addToolResult,
   }: {
-    message: UIMessage;
-    addToolResult: (args: { toolCallId: string; result: any }) => void;
+    message: Message | UIMessage;
   }) {
+    // Memoize the parts array so that re-renders only occur if message.parts changes.
+    const parts = useMemo(() => message.parts, [message.parts]);
+
     return (
       <div className="mr-auto w-full max-w-full p-5">
         <div className="prose !max-w-full dark:prose-invert">
-          {message.parts.map((part, index) => (
+          {parts.map((part, index) => (
             <React.Fragment key={index}>
               {part.type === "text" ? (
                 <TextPart markdown={part.text} />

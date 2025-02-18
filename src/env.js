@@ -10,8 +10,7 @@ export const env = createEnv({
     GOOGLE_GENERATIVE_AI_API_KEY: z.string(),
     GROQ_API_KEY: z.string(),
     CEREBRAS_API_KEY: z.string(),
-    SAMBANOVA_API_KEY: z.string(),
-    SAMBANOVA_BASE_URL: z.string().url(),
+    OPENROUTER_API_KEY: z.string(),
 
     NODE_ENV: z.enum(["development", "test", "production"]),
   },
@@ -33,9 +32,7 @@ export const env = createEnv({
     GOOGLE_GENERATIVE_AI_API_KEY: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     GROQ_API_KEY: process.env.GROQ_API_KEY,
     CEREBRAS_API_KEY: process.env.CEREBRAS_API_KEY,
-    SAMBANOVA_API_KEY: process.env.SAMBANOVA_API_KEY,
-
-    SAMBANOVA_BASE_URL: process.env.SAMBANOVA_BASE_URL,
+    OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
 
     NODE_ENV: process.env.NODE_ENV,
   },

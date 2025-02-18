@@ -2,6 +2,13 @@ import { cerebras } from "@ai-sdk/cerebras";
 import { google } from "@ai-sdk/google";
 import { groq } from "@ai-sdk/groq";
 
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { env } from "~/env";
+
+const openrouter = createOpenRouter({
+    apiKey: env.OPENROUTER_API_KEY,
+});
+
 export default {
     // Google
     'gemini-1.5-flash (Google)': google('gemini-1.5-flash'),
@@ -40,4 +47,13 @@ export default {
     "llama3-70b-8192 (Groq)": groq('llama3-70b-8192'),
     "llama3-8b-8192 (Groq)": groq('llama3-8b-8192'),
     "mixtral-8x7b-32768 (Groq)": groq('mixtral-8x7b-32768'),
+
+    // OpenRouter
+    'qwen/qwen-max (Open Router)': openrouter.chat('qwen/qwen-max'),
+    'deepseek/deepseek-r1-distill-qwen-32b (Open Router)': openrouter.chat('deepseek/deepseek-r1-distill-qwen-32b'),
+    'deepseek/deepseek-r1:free (Open Router)': openrouter.chat('deepseek/deepseek-r1:free'),
+
+    'mistralai/mistral-nemo (Open Router)': openrouter.chat('mistralai/mistral-nemo:free'),
+    'anthropic/claude-3.5-sonnet (Open Router)': openrouter.chat('anthropic/claude-3.5-sonnet'),
+
 } as const;
