@@ -5,7 +5,6 @@ import { MessageSquarePlusIcon } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { dxdb } from "~/lib/db/dexie";
-import ProfileButton from "../profile/button";
 import { Button } from "../ui/button";
 import {
   Sidebar,
@@ -63,7 +62,10 @@ export default React.memo(function AppSidebar() {
 
       <header className="bg-backgound mb-auto flex !w-full items-center justify-between gap-1 border-b p-5 py-3 md:hidden">
         <AppSidebarTrigger />
-        <ProfileButton />
+
+        <Button onClick={handleNewChat} variant="outline" size="icon">
+          <MessageSquarePlusIcon />
+        </Button>
       </header>
     </div>
   );
