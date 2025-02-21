@@ -56,7 +56,7 @@ const Messages = React.memo(function Messages() {
       {messages?.map((message) => (
         <div
           key={message.id}
-          className="mx-auto w-full md:!max-w-2xl lg:!max-w-4xl"
+          className="mx-auto w-full md:!max-w-2xl max-w-sm lg:!max-w-4xl"
         >
           {message.role === "user" ? (
             <UserMessageBubble message={message} />
