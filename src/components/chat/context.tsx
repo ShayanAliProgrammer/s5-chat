@@ -55,6 +55,8 @@ export const ChatProvider: React.FC<{
     addToolResult,
     stop,
     status,
+
+    reload,
   } = useChat({
     id: chatId,
     onError(error) {
@@ -62,6 +64,7 @@ export const ChatProvider: React.FC<{
     },
   });
 
+  // Load initial messages from the local database
   useEffect(() => {
     (async () => {
       const localMessages = await dxdb.getMessagesByChatId(chatId);
@@ -82,41 +85,44 @@ export const ChatProvider: React.FC<{
     stop();
   }, [chatId, stop]); // Stop the stream when navigating to a different chat
 
+  // Fire-and-forget: update the database in the background when messages change
   useEffect(() => {
-    // Only update if there's at least one previous message (typically the one being updated)
     if (messages.length > 1) {
       const lastMessageIndex = messages.length - 1;
       const lastMessage = messages[lastMessageIndex]!;
       const { parts, content } = lastMessage;
 
-      // Only proceed if the last message has meaningful data
       if (parts && content && (parts.length > 0 || content.trim())) {
         (async () => {
-          // Retrieve the current chat record
-          const chat = await dxdb.chats.get(chatId);
-          if (chat && Array.isArray(chat.messages)) {
-            // Build the updated version of the changed message, filtering out unnecessary parts
-            const updatedMessage = {
-              chatId,
-              createdAt: lastMessage.createdAt ?? new Date(),
-              id: lastMessage.id,
-              parts: lastMessage.parts.filter(
-                (part) =>
-                  part.type === "text" || part.type === "tool-invocation",
-              ),
-              role: lastMessage.role,
-            };
+          try {
+            const chat = await dxdb.chats.get(chatId);
+            if (chat && Array.isArray(chat.messages)) {
+              const updatedMessage = {
+                chatId,
+                createdAt: lastMessage.createdAt ?? new Date(),
+                id: lastMessage.id,
+                parts: lastMessage.parts.filter(
+                  (part) =>
+                    part.type === "text" || part.type === "tool-invocation",
+                ),
+                role: lastMessage.role,
+              };
 
-            // @ts-expect-error Update only the changed message in the array
-            chat.messages[lastMessageIndex] = updatedMessage;
-            await dxdb.chats.put(chat);
+              // @ts-expect-error Update the message in the local chat record
+              chat.messages[lastMessageIndex] = updatedMessage;
+              // Fire the database put in the background without awaiting it.
+              dxdb.chats.put(chat).catch((err) => {
+                console.error("Error saving chat:", err);
+              });
+            }
+          } catch (err) {
+            console.error("Error fetching chat:", err);
           }
         })();
       }
     }
   }, [messages, chatId]);
 
-  // Memoize the context value to prevent unnecessary re-renders
   const contextValue = useMemo(
     () => ({
       error: errorRef.current,
@@ -128,6 +134,8 @@ export const ChatProvider: React.FC<{
       addToolResult,
       status,
       stop,
+
+      reload,
     }),
     [
       messages,
@@ -137,6 +145,8 @@ export const ChatProvider: React.FC<{
       addToolResult,
       status,
       stop,
+
+      reload,
     ],
   );
 

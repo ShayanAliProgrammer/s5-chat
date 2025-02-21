@@ -1,6 +1,3 @@
-// Chat.tsx
-"use client";
-
 import React from "react";
 import ChatForm from "./form";
 import Messages from "./messages";

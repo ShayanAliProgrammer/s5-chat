@@ -8,7 +8,7 @@ import { SidebarProvider } from "~/components/ui/sidebar";
 export const dynamic = "force-static";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  if (typeof window == "undefined") return;
+  if (typeof window == "undefined") return <></>;
 
   return (
     <BrowserRouter>
@@ -21,7 +21,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </SidebarProvider>
 
-        <main className="size-full max-h-[calc(100vh_-_61px)] overflow-x-hidden md:max-h-screen">
+        <main className="size-full max-h-[calc(100svh_-_61px)] overflow-x-hidden md:max-h-svh">
           {children}
         </main>
       </div>

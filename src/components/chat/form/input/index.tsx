@@ -1,7 +1,5 @@
-// ChatFormInput.tsx
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
 import { CornerDownLeftIcon, SquareIcon } from "lucide-react";
 import React, { useEffect, useRef } from "react";
 import { Button } from "~/components/ui/button";
@@ -17,27 +15,6 @@ interface ChatFormInputProps {
 }
 
 const MAX_HEIGHT = 164;
-
-const AnimatedPlaceholder = React.memo(function AnimatedPlaceholder({
-  value,
-}: {
-  value: string;
-}) {
-  return (
-    <AnimatePresence mode="wait">
-      <motion.p
-        key={"placeholder"}
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -5 }}
-        transition={{ duration: 0.1 }}
-        className="pointer-events-none absolute w-[150px] text-sm text-muted-foreground"
-      >
-        {value ? "" : "Type something here..."}
-      </motion.p>
-    </AnimatePresence>
-  );
-});
 
 const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
   function ChatFormInputInner({ value, onChange, status, stop, setError }) {
@@ -93,14 +70,11 @@ const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
               <div className="relative">
                 <Textarea
                   defaultValue={value}
-                  placeholder=""
+                  placeholder="Enter Message..."
                   className="resize-none rounded-2xl rounded-b-none border-none bg-muted px-4 py-3 leading-[1.2] focus-visible:ring-0"
                   ref={textareaRef}
                   onChange={onChange}
                 />
-                <div className="absolute left-4 top-3">
-                  <AnimatedPlaceholder value={value} />
-                </div>
               </div>
             </div>
 
@@ -175,7 +149,15 @@ const SubmitButton = React.memo(
 
 const ChatFormInput = React.memo(
   function ChatFormInput(props: ChatFormInputProps) {
-    return <ChatFormInputInner {...props} />;
+    return (
+      <ChatFormInputInner
+        onChange={props.onChange}
+        setError={props.setError}
+        status={props.status}
+        stop={props.stop}
+        value={props.value}
+      />
+    );
   },
   (prev, next) => prev.status === next.status && prev.value === next.value,
 );

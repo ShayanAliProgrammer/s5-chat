@@ -1,3 +1,10 @@
+import {
+  getMessageParts,
+  ReasoningUIPart,
+  SourceUIPart,
+  TextUIPart,
+  ToolInvocationUIPart,
+} from "@ai-sdk/ui-utils";
 import { type UIMessage } from "ai";
 import { CheckIcon } from "lucide-react";
 import React, { useCallback, useMemo, useState } from "react";
@@ -10,68 +17,6 @@ import {
 } from "~/components/ui/disclosure";
 import { TextShimmer } from "~/components/ui/text-shimmer";
 import { Message } from "~/lib/db/dexie";
-import { cn } from "~/lib/utils";
-
-// Helper to extract internal chain-of-thought from markdown text.
-function parseThinkTag(markdown: string): {
-  chainOfThought: string | null;
-  visibleText: string;
-} {
-  const regex = /<think>([\s\S]*?)<\/think>/i;
-  const match = regex.exec(markdown);
-  if (match) {
-    const chainOfThought = match[1]!.trim();
-    const visibleText = markdown.replace(regex, "").trim();
-    return { chainOfThought, visibleText };
-  }
-  return { chainOfThought: null, visibleText: markdown };
-}
-
-// ---------------------------
-// Text part component
-// ---------------------------
-interface TextPartProps {
-  markdown: string;
-}
-const TextPart = React.memo(
-  function TextPart({ markdown }: TextPartProps) {
-    // Memoize parsing so it only recalculates when markdown changes.
-    const { chainOfThought, visibleText } = useMemo(
-      () => parseThinkTag(markdown),
-      [markdown],
-    );
-
-    return (
-      <>
-        {chainOfThought && (
-          <Disclosure>
-            <DisclosureTrigger>
-              <p className="!my-0 !mt-1 w-max cursor-pointer border-b-2 text-sm text-muted-foreground">
-                Show internal chain-of-thought
-              </p>
-            </DisclosureTrigger>
-            <DisclosureContent>
-              <div className="border-l-2 py-2 pl-5 text-muted-foreground">
-                {chainOfThought}
-              </div>
-            </DisclosureContent>
-          </Disclosure>
-        )}
-        <div
-          className={cn({
-            "first:*:!mt-2": !!chainOfThought,
-            "first:*:!mt-1": !chainOfThought,
-          })}
-        >
-          <MarkdownProvider markdown={visibleText}>
-            <MarkdownRenderer />
-          </MarkdownProvider>
-        </div>
-      </>
-    );
-  },
-  (prev, next) => prev.markdown === next.markdown,
-);
 
 // ---------------------------
 // Tool invocation component
@@ -97,7 +42,7 @@ const ToolInvocationDisclosure = React.memo(
           <DisclosureTrigger>
             <p
               onClick={toggleOpen}
-              className="mb-2 flex w-max cursor-pointer items-center gap-1 hover:underline"
+              className="mb-2 w-max cursor-pointer items-center gap-1 hover:underline"
             >
               <span>{part.toolInvocation.toolName}</span>
               <CheckIcon className="ml-1 size-4 text-green-600 dark:text-green-400" />
@@ -136,25 +81,48 @@ const AssistantMessageBubble = React.memo(
     message: Message | UIMessage;
   }) {
     // Memoize the parts array so that re-renders only occur if message.parts changes.
-    const parts = useMemo(() => message.parts, [message.parts]);
+    const parts = useMemo(() => getMessageParts(message), [message]);
 
     return (
       <div className="mr-auto w-full max-w-full p-5">
         <div className="prose !max-w-full dark:prose-invert">
-          {parts.map((part, index) => (
-            <React.Fragment key={index}>
-              {part.type === "text" ? (
-                <TextPart markdown={part.text} />
-              ) : part.type === "tool-invocation" ? (
-                <ToolInvocationDisclosure part={part} />
-              ) : null}
-            </React.Fragment>
-          ))}
+          <MessageParts parts={parts} />
         </div>
       </div>
     );
   },
   (prev, next) => prev.message.content === next.message.content,
+);
+
+const MessageParts = React.memo(
+  ({
+    parts,
+  }: {
+    parts: (
+      | TextUIPart
+      | ReasoningUIPart
+      | ToolInvocationUIPart
+      | SourceUIPart
+    )[];
+  }) => {
+    return (
+      <>
+        {parts.map((part, index) => (
+          <React.Fragment key={`${index}-${part.type}`}>
+            {part.type === "text" ? (
+              <div className="mt-2">
+                <MarkdownProvider markdown={part.text}>
+                  <MarkdownRenderer />
+                </MarkdownProvider>
+              </div>
+            ) : part.type === "tool-invocation" ? (
+              <ToolInvocationDisclosure part={part} />
+            ) : null}
+          </React.Fragment>
+        ))}
+      </>
+    );
+  },
 );
 
 export default AssistantMessageBubble;

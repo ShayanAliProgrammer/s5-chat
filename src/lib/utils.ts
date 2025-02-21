@@ -1,6 +1,10 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+import React from "react";
+import ReactDOMServer from 'react-dom/server';
+
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
@@ -11,6 +15,16 @@ export const extractTextFromNode = (node: any): string => {
     return node.children.map(extractTextFromNode).join("");
   return "";
 };
+
+export function reactNodeToText(reactNode: React.ReactNode) {
+  // Render the node to static HTML markup.
+  const html = ReactDOMServer.renderToStaticMarkup(reactNode);
+
+  // Create a temporary DOM element and extract text content.
+  const tempElement = document.createElement('div');
+  tempElement.innerHTML = html;
+  return tempElement.textContent || tempElement.innerText || '';
+}
 
 export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;

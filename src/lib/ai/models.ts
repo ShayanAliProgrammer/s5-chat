@@ -51,9 +51,10 @@ export default {
     // OpenRouter
     'qwen/qwen-max (Open Router)': openrouter.chat('qwen/qwen-max'),
     'deepseek/deepseek-r1-distill-qwen-32b (Open Router)': openrouter.chat('deepseek/deepseek-r1-distill-qwen-32b'),
-    'deepseek/deepseek-r1:free (Open Router)': openrouter.chat('deepseek/deepseek-r1:free'),
+    'deepseek/deepseek-r1 (Open Router)': openrouter.chat('deepseek/deepseek-r1:free'),
+
 
     'mistralai/mistral-nemo (Open Router)': openrouter.chat('mistralai/mistral-nemo:free'),
-    'anthropic/claude-3.5-sonnet (Open Router)': openrouter.chat('anthropic/claude-3.5-sonnet'),
+    'cognitivecomputations/dolphin3.0-r1-mistral-24b:free (Open Router)': openrouter.chat('cognitivecomputations/dolphin3.0-r1-mistral-24b:free'),
 
 } as const;

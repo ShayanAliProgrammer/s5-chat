@@ -13,9 +13,8 @@ const config = {
     ignoreBuildErrors: true,
   },
 
-  experimental: {
-    reactCompiler: true,
-  },
+  experimental: {},
 };
+``;
 
 export default config;

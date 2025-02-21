@@ -25,14 +25,11 @@ export const AppSidebarTrigger = React.memo(function ToggleSidebar() {
 export default React.memo(function AppSidebar() {
   const navigate = useNavigate();
 
-  // Use useLiveQuery to automatically fetch and update the chat list.
-  const chats = useLiveQuery(() => dxdb.getAllChats(), []);
-
   // Function to create a new chat and redirect the user
-  const handleNewChat = async () => {
+  const handleNewChat = React.useCallback(async () => {
     const newChat = await dxdb.createChat(crypto.randomUUID());
     navigate(`/chat/${newChat.id}`);
-  };
+  }, []);
 
   return (
     <div className="!h-max w-full md:z-20 md:w-max">
@@ -48,14 +45,8 @@ export default React.memo(function AppSidebar() {
             </Button>
           </SidebarHeader>
 
-          <div className="flex h-full max-h-full flex-col gap-1 overflow-y-auto overflow-x-hidden border-b border-t px-2 pb-5 pt-3 *:flex-shrink-0">
-            {chats && chats.length > 0 ? (
-              chats.map((chat) => (
-                <ChatLink key={chat.id} id={chat.id} title={chat.title} />
-              ))
-            ) : (
-              <div>No chats available</div>
-            )}
+          <div className="flex h-full max-h-full flex-col gap-1 overflow-y-auto overflow-x-hidden border-t-2 px-2 pb-5 pt-3 *:flex-shrink-0">
+            <Chats />
           </div>
         </SidebarContent>
       </Sidebar>
@@ -68,5 +59,22 @@ export default React.memo(function AppSidebar() {
         </Button>
       </header>
     </div>
+  );
+});
+
+const Chats = React.memo(() => {
+  // Use useLiveQuery to automatically fetch and update the chat list.
+  const chats = useLiveQuery(() => dxdb.getAllChats(), []);
+
+  return (
+    <>
+      {chats && chats.length > 0 ? (
+        chats.map((chat) => (
+          <ChatLink key={chat.id} id={chat.id} title={chat.title} />
+        ))
+      ) : (
+        <div>No chats available</div>
+      )}
+    </>
   );
 });

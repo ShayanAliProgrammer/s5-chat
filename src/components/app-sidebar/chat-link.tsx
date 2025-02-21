@@ -19,7 +19,13 @@ import {
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
 
-export default function ChatLink({ id, title }: { id: string; title: string }) {
+export default React.memo(function ChatLink({
+  id,
+  title,
+}: {
+  id: string;
+  title: string;
+}) {
   const [editing, setEditing] = useState(false);
   const [newTitle, setNewTitle] = useState(title);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -85,7 +91,7 @@ export default function ChatLink({ id, title }: { id: string; title: string }) {
       </li>
     </Button>
   );
-}
+});
 
 const Actions = React.memo(function Actions({
   editing,

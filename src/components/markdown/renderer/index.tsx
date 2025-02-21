@@ -1,6 +1,7 @@
 "use client";
 
-import "highlight.js/styles/vs2015.min.css";
+import "highlight.js/styles/github-dark.min.css";
+// import "highlight.js/styles/vs2015.min.css";
 import { ClipboardCheckIcon, ClipboardIcon } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Markdown from "react-markdown";
@@ -97,7 +98,7 @@ const MemoizedPre = React.memo(function Pre(props: any) {
 
   return (
     <pre className="rounded-md border">
-      <div className="flex items-center justify-between rounded-t-md bg-background px-3 py-2">
+      <div className="flex items-center justify-between rounded-t-md bg-muted px-3 py-2">
         <p className="m-0 line-clamp-1 truncate text-sm">{language}</p>
         <div className="ml-auto size-max">
           <Button size="icon" variant="ghost" onClick={copyText}>
