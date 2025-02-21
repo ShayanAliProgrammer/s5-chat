@@ -53,6 +53,10 @@ export default {
     'deepseek/deepseek-r1-distill-qwen-32b (Open Router)': openrouter.chat('deepseek/deepseek-r1-distill-qwen-32b'),
     'deepseek/deepseek-r1 (Open Router)': openrouter.chat('deepseek/deepseek-r1:free'),
 
+<<<<<<< HEAD
+=======
+    'deepseek/deepseek-chat (Open Router)': openrouter.chat('deepseek/deepseek-r1:free'),
+>>>>>>> c0bf768d63e659d756fc0e6139db7645c2cb443b
 
     'mistralai/mistral-nemo (Open Router)': openrouter.chat('mistralai/mistral-nemo:free'),
     'cognitivecomputations/dolphin3.0-r1-mistral-24b:free (Open Router)': openrouter.chat('cognitivecomputations/dolphin3.0-r1-mistral-24b:free'),

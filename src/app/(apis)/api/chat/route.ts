@@ -7,7 +7,11 @@ export async function POST(req: Request) {
     const { messages, id } = await req.json();
 
     const result = streamText({
+<<<<<<< HEAD
         model: models['llama-3.1-8b-instant (Groq)'],
+=======
+        model: models['gemini-2.0-flash-lite-preview-02-05 (Google)'],
+>>>>>>> c0bf768d63e659d756fc0e6139db7645c2cb443b
         messages,
 
         // maxTokens: 1000,
