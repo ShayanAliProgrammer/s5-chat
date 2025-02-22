@@ -1,5 +1,6 @@
 import { smoothStream, streamText } from 'ai';
 import models from '~/lib/ai/models';
+import { calculatorTools } from '~/lib/ai/tools/math';
 
 export const maxDuration = 30; // Allow streaming response upto 30 seconds
 
@@ -19,12 +20,14 @@ export async function POST(req: Request) {
             chunking: 'line', // optional: defaults to 'word'
         }),
 
+        abortSignal: req.signal,
+
 
         // disable web tools for now, we have to work on these tools to make them better
-        // tools: {
-        //     // ...getWebTools(),
-        //     ...calculatorTools()
-        // },
+        tools: {
+            // ...getWebTools(),
+            ...calculatorTools()
+        },
 
     });
 

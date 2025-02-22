@@ -1,7 +1,6 @@
 "use client";
 
-import "highlight.js/styles/github-dark.min.css";
-// import "highlight.js/styles/vs2015.min.css";
+import "highlight.js/styles/vs2015.min.css";
 import { ClipboardCheckIcon, ClipboardIcon } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Markdown from "react-markdown";
