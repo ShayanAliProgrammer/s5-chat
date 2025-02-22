@@ -103,7 +103,7 @@ const MemoizedPre = React.memo(function Pre({
     };
   }, []);
 
-  const highlightedCode = hljs.highlightAuto(code);
+  const highlightedCode = hljs.highlightAuto(code).value;
 
   return (
     <pre className="!relative !overflow-auto rounded-md border">
