@@ -1,7 +1,7 @@
 "use client";
 
-import { CornerDownLeftIcon, SquareIcon } from "lucide-react";
-import React, { useEffect, useRef } from "react";
+import { CornerDownLeftIcon, MicIcon, SquareIcon } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
 import { cn } from "~/lib/utils";
@@ -16,10 +16,17 @@ interface ChatFormInputProps {
 
 const MAX_HEIGHT = 164;
 
+// Check browser support for SpeechRecognition
+const SpeechRecognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
+const isSpeechSupported = !!SpeechRecognition;
+
 const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
   function ChatFormInputInner({ value, onChange, status, stop, setError }) {
     const submitBtnRef = useRef<HTMLButtonElement | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const [isRecording, setIsRecording] = useState(false);
+    const recognitionRef = useRef<SpeechRecognition | null>(null);
 
     // Auto-resize effect
     useEffect(() => {
@@ -29,6 +36,67 @@ const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
       textarea.style.height = "auto";
       textarea.style.height = `${Math.min(textarea.scrollHeight, MAX_HEIGHT)}px`;
     }, [value]);
+
+    // Initialize and handle speech recognition
+    const startRecording = () => {
+      if (!isSpeechSupported) {
+        setError("Speech recognition is not supported in this browser.");
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+      recognition.continuous = true; // Keep listening until stopped
+      recognition.interimResults = true; // Show interim results
+      recognition.lang = "en-US"; // Set language (adjustable)
+
+      recognition.onresult = (event) => {
+        let interimTranscript = "";
+        let finalTranscript = "";
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i]![0]!.transcript;
+          if (event.results[i]!.isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+
+        const newValue = value + finalTranscript + interimTranscript;
+        onChange({
+          target: { value: newValue },
+        } as React.ChangeEvent<HTMLTextAreaElement>);
+      };
+
+      recognition.onerror = (event) => {
+        setError(`Speech recognition error: ${event.error}`);
+        setIsRecording(false);
+      };
+
+      recognition.onend = () => {
+        setIsRecording(false);
+      };
+
+      recognition.start();
+      setIsRecording(true);
+    };
+
+    const stopRecording = () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+        setIsRecording(false);
+      }
+    };
+
+    // Cleanup on unmount
+    useEffect(() => {
+      return () => {
+        if (recognitionRef.current) {
+          recognitionRef.current.stop();
+        }
+      };
+    }, []);
 
     return (
       <div className="w-full px-1">
@@ -58,7 +126,22 @@ const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
             </div>
 
             <div className="h-12 w-full rounded-b-xl bg-muted dark:bg-muted">
-              <div className="!ml-auto w-max pr-3">
+              <div className="flex items-center justify-end gap-2 pr-3">
+                {/* Voice Input Button */}
+                {isSpeechSupported && (
+                  <Button
+                    type="button"
+                    size="icon"
+                    onClick={isRecording ? stopRecording : startRecording}
+                    className={cn("justify-center rounded-full", {
+                      "bg-red-600 hover:bg-red-700": isRecording,
+                    })}
+                    variant="ghost"
+                  >
+                    <MicIcon />
+                  </Button>
+                )}
+                {/* Submit/Stop Button */}
                 <SubmitButton
                   value={value}
                   status={status}
@@ -74,7 +157,7 @@ const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
       </div>
     );
   },
-  (prev, next) => prev.value === next.value,
+  (prev, next) => prev.value === next.value && prev.status === next.status,
 );
 
 const SubmitButton = React.memo(

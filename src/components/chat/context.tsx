@@ -1,7 +1,5 @@
-"use client";
-
 import { useChat } from "@ai-sdk/react";
-import type { UIMessage } from "ai";
+import type { ChatRequestOptions, UIMessage } from "ai";
 import React, {
   createContext,
   useCallback,
@@ -17,6 +15,7 @@ interface ChatContextType {
   error: string | null;
   setError: (error: string | null) => void;
   messages: UIMessage[];
+  setMessages: (messages: UIMessage[]) => void; // Added to allow message updates
   input: string;
   handleInputChange: (
     e:
@@ -30,6 +29,10 @@ interface ChatContextType {
   addToolResult: (args: { toolCallId: string; result: any }) => void;
   status: "error" | "submitted" | "streaming" | "ready";
   stop: () => void;
+
+  reload: (
+    chatRequestOptions?: ChatRequestOptions,
+  ) => Promise<string | null | undefined>;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -70,7 +73,7 @@ export const ChatProvider: React.FC<{
       const localMessages = await dxdb.getMessagesByChatId(chatId);
       setMessages(
         localMessages.map((message) => ({
-          // @ts-expect-error ignore typecheck for next line
+          // @ts-expect-error ignore next line
           content: String(message.parts[message.parts.length - 1]!.text),
           parts: message.parts,
           id: message.id,
@@ -81,45 +84,37 @@ export const ChatProvider: React.FC<{
     })();
   }, [chatId, setMessages]);
 
+  // Stop streaming when chatId changes
   useEffect(() => {
     stop();
-  }, [chatId, stop]); // Stop the stream when navigating to a different chat
+  }, [chatId, stop]);
 
-  // Fire-and-forget: update the database in the background when messages change
+  // Sync messages to the database when they change (including edits)
   useEffect(() => {
-    if (messages.length > 1) {
-      const lastMessageIndex = messages.length - 1;
-      const lastMessage = messages[lastMessageIndex]!;
-      const { parts, content } = lastMessage;
-
-      if (parts && content && (parts.length > 0 || content.trim())) {
-        (async () => {
-          try {
-            const chat = await dxdb.chats.get(chatId);
-            if (chat && Array.isArray(chat.messages)) {
-              const updatedMessage = {
-                chatId,
-                createdAt: lastMessage.createdAt ?? new Date(),
-                id: lastMessage.id,
-                parts: lastMessage.parts.filter(
-                  (part) =>
-                    part.type === "text" || part.type === "tool-invocation",
-                ),
-                role: lastMessage.role,
-              };
-
-              // @ts-expect-error Update the message in the local chat record
-              chat.messages[lastMessageIndex] = updatedMessage;
-              // Fire the database put in the background without awaiting it.
-              dxdb.chats.put(chat).catch((err) => {
-                console.error("Error saving chat:", err);
-              });
-            }
-          } catch (err) {
-            console.error("Error fetching chat:", err);
+    if (messages.length > 0) {
+      (async () => {
+        try {
+          const chat = await dxdb.chats.get(chatId);
+          if (chat && Array.isArray(chat.messages)) {
+            // Update the entire messages array in the database
+            const updatedMessages = messages.map((msg) => ({
+              chatId,
+              createdAt: msg.createdAt ?? new Date(),
+              id: msg.id,
+              parts: msg.parts?.filter(
+                (part) =>
+                  part.type === "text" || part.type === "tool-invocation",
+              ) || [{ type: "text", text: msg.content }],
+              role: msg.role,
+            }));
+            // @ts-expect-error ignore next line
+            chat.messages = updatedMessages;
+            await dxdb.chats.put(chat); // Persist to IndexedDB
           }
-        })();
-      }
+        } catch (err) {
+          console.error("Error syncing messages to database:", err);
+        }
+      })();
     }
   }, [messages, chatId]);
 
@@ -128,6 +123,7 @@ export const ChatProvider: React.FC<{
       error: errorRef.current,
       setError,
       messages,
+      setMessages, // Expose setMessages for editing
       input,
       handleInputChange,
       handleSubmit,
@@ -139,6 +135,7 @@ export const ChatProvider: React.FC<{
     }),
     [
       messages,
+      setMessages,
       input,
       handleInputChange,
       handleSubmit,

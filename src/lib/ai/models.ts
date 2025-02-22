@@ -18,7 +18,7 @@ export default {
     'gemini-1.5-pro (Google)': google('gemini-1.5-pro'),
     'gemini-1.5-pro-latest (Google)': google('gemini-1.5-pro-latest'),
     // 'gemini-2.0-flash-001 (Google)': google('gemini-2.0-flash-001'),
-    'gemini-2.0-flash-exp (Google)': google('gemini-2.0-flash-exp'),
+    // 'gemini-2.0-flash-exp (Google)': google('gemini-2.0-flash-exp'),
     'gemini-2.0-flash-lite-preview-02-05 (Google)': google('gemini-2.0-flash-lite-preview-02-05'),
     // 'gemini-2.0-flash-thinking-exp-01-21 (Google)': google('gemini-2.0-flash-thinking-exp-01-21'),
     'gemini-2.0-pro-exp-02-05 (Google)': google('gemini-2.0-pro-exp-02-05'),
@@ -44,6 +44,8 @@ export default {
     // "mixtral-8x7b-32768 (Groq)": groq('mixtral-8x7b-32768'),
 
     // OpenRouter
+    'microsoft/phigoogle/gemini-2.0-flash-lite-preview-02-05 (Open Router)': openrouter.chat('google/gemini-2.0-flash-lite-preview-02-05:free'),
+    // 'microsoft/phi-3-mini-128k-instruct (Open Router)': openrouter.chat('microsoft/phi-3-mini-128k-instruct:free'),
     // 'qwen/qwen-max (Open Router)': openrouter.chat('qwen/qwen-max'),
     // 'deepseek/deepseek-r1-distill-qwen-32b (Open Router)': openrouter.chat('deepseek/deepseek-r1-distill-qwen-32b'),
     // 'deepseek/deepseek-r1 (Open Router)': openrouter.chat('deepseek/deepseek-r1:free'),

@@ -12,6 +12,8 @@ export const env = createEnv({
     CEREBRAS_API_KEY: z.string(),
     OPENROUTER_API_KEY: z.string(),
 
+    GOOGLE_SEARCH_VERIFICATION: z.string().optional(),
+
     NODE_ENV: z.enum(["development", "test", "production"]),
   },
 
@@ -33,6 +35,8 @@ export const env = createEnv({
     GROQ_API_KEY: process.env.GROQ_API_KEY,
     CEREBRAS_API_KEY: process.env.CEREBRAS_API_KEY,
     OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
+
+    GOOGLE_SEARCH_VERIFICATION: process.env.GOOGLE_SEARCH_VERIFICATION,
 
     NODE_ENV: process.env.NODE_ENV,
   },
