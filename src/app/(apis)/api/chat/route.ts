@@ -1,4 +1,5 @@
 import { smoothStream, streamText } from 'ai';
+import { Model } from '~/lib/ai/available-models';
 import models from '~/lib/ai/models';
 import { getWebTools } from '~/lib/ai/tools/internet';
 import { calculatorTools } from '~/lib/ai/tools/math';
@@ -6,10 +7,10 @@ import { calculatorTools } from '~/lib/ai/tools/math';
 export const maxDuration = 30; // Allow streaming response upto 30 seconds
 
 export async function POST(req: Request) {
-    const { messages, id } = await req.json();
+    const { messages, id, model } = await req.json();
 
     const result = streamText({
-        model: models['deepseek-r1-distill-llama-70b (Groq)'],
+        model: models[model as Model],
         messages,
 
         // maxTokens: 1000,

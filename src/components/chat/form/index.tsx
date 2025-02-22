@@ -16,18 +16,17 @@ const ChatForm: React.FC = React.memo(
     async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
       e.preventDefault();
 
-      console.log(
-        await dxdb.addMessageToChat(
-          chatId!,
-          {
-            type: "text",
-            text: input,
-          },
-          "user",
-        ),
+      await dxdb.addMessageToChat(
+        chatId!,
+        {
+          type: "text",
+          text: input,
+        },
+        "user",
       );
 
       handleSubmit(e);
+      setError(null);
     }
 
     return (

@@ -66,12 +66,15 @@ const UserMessageBubble = React.memo(
         reload();
       }
       setIsEditing(false);
+
+      setError(null);
     };
 
     // Cancel editing and revert to original content
     const handleCancel = useCallback(() => {
       setEditedContent(message.content);
       setIsEditing(false);
+      setError(null);
     }, [message.content]);
 
     // Handle Enter (save) and Escape (cancel) key presses

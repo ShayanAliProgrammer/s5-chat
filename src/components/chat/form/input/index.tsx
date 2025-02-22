@@ -3,8 +3,17 @@
 import { CornerDownLeftIcon, MicIcon, SquareIcon } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
+import { AVAILABLE_MODELS } from "~/lib/ai/available-models";
 import { cn } from "~/lib/utils";
+import { useChatContext } from "../../context";
 
 interface ChatFormInputProps {
   value: string;
@@ -14,15 +23,15 @@ interface ChatFormInputProps {
   setError: (err: string | null) => void;
 }
 
-const MAX_HEIGHT = 164;
+const MAX_HEIGHT = 240;
 
-// Check browser support for SpeechRecognition
 const SpeechRecognition =
   window.SpeechRecognition || window.webkitSpeechRecognition;
 const isSpeechSupported = !!SpeechRecognition;
 
 const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
   function ChatFormInputInner({ value, onChange, status, stop, setError }) {
+    const { setSelectedModel, selectedModel } = useChatContext();
     const submitBtnRef = useRef<HTMLButtonElement | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const [isRecording, setIsRecording] = useState(false);
@@ -46,9 +55,9 @@ const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
 
       const recognition = new SpeechRecognition();
       recognitionRef.current = recognition;
-      recognition.continuous = true; // Keep listening until stopped
-      recognition.interimResults = true; // Show interim results
-      recognition.lang = "en-US"; // Set language (adjustable)
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = "en-US";
 
       recognition.onresult = (event) => {
         let interimTranscript = "";
@@ -89,7 +98,6 @@ const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
       }
     };
 
-    // Cleanup on unmount
     useEffect(() => {
       return () => {
         if (recognitionRef.current) {
@@ -100,8 +108,8 @@ const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
 
     return (
       <div className="w-full px-1">
-        <div className="relative mx-auto w-full max-w-3xl rounded-[22px] border border-border/5">
-          <div className="relative flex flex-col rounded-2xl border border-border/5 bg-muted">
+        <div className="relative mx-auto w-full max-w-3xl">
+          <div className="relative flex flex-col rounded-2xl border border-border bg-secondary">
             <div
               className="overflow-y-auto"
               style={{ maxHeight: `${MAX_HEIGHT}px` }}
@@ -126,30 +134,46 @@ const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
             </div>
 
             <div className="h-12 w-full rounded-b-xl bg-muted dark:bg-muted">
-              <div className="flex items-center justify-end gap-2 pr-3">
-                {/* Voice Input Button */}
-                {isSpeechSupported && (
-                  <Button
-                    type="button"
-                    size="icon"
-                    onClick={isRecording ? stopRecording : startRecording}
-                    className={cn("justify-center rounded-full", {
-                      "bg-red-600 hover:bg-red-700": isRecording,
-                    })}
-                    variant="ghost"
-                  >
-                    <MicIcon />
+              <div className="flex items-center justify-between gap-2 px-3 pt-1">
+                {/* Model Selection */}
+                <Select value={selectedModel} onValueChange={setSelectedModel}>
+                  <Button asChild variant="outline">
+                    <SelectTrigger className="max-w-[200px] text-sm">
+                      <SelectValue placeholder="Select a model" />
+                    </SelectTrigger>
                   </Button>
-                )}
-                {/* Submit/Stop Button */}
-                <SubmitButton
-                  value={value}
-                  status={status}
-                  submitBtnRef={submitBtnRef}
-                  setError={setError}
-                  textareaRef={textareaRef}
-                  stop={stop}
-                />
+                  <SelectContent className="max-h-40">
+                    {AVAILABLE_MODELS.map((model) => (
+                      <SelectItem key={model} value={model}>
+                        {model}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {/* Voice and Submit Buttons */}
+                <div className="flex items-center gap-2">
+                  {isSpeechSupported && (
+                    <Button
+                      type="button"
+                      size="icon"
+                      onClick={isRecording ? stopRecording : startRecording}
+                      className={cn("justify-center rounded-full", {
+                        "bg-red-600 hover:bg-red-700": isRecording,
+                      })}
+                      variant="ghost"
+                    >
+                      <MicIcon />
+                    </Button>
+                  )}
+                  <SubmitButton
+                    value={value}
+                    status={status}
+                    submitBtnRef={submitBtnRef}
+                    setError={setError}
+                    textareaRef={textareaRef}
+                    stop={stop}
+                  />
+                </div>
               </div>
             </div>
           </div>

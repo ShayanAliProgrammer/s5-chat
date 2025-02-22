@@ -112,3 +112,8 @@ class Database extends Dexie {
 
 // Export a single instance of the Database.
 export const dxdb = new Database();
+
+if (typeof window !== "undefined") {
+  // @ts-expect-error ignore next line
+  window.dxdb = dxdb;
+}

@@ -1,3 +1,5 @@
+import "server-only";
+
 import { cerebras } from "@ai-sdk/cerebras";
 import { google } from "@ai-sdk/google";
 import { groq } from "@ai-sdk/groq";
