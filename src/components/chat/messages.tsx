@@ -32,7 +32,7 @@ const Messages = React.memo(function Messages() {
       // If the user is near the bottom, scroll to the bottom
       if (isNearBottom({ scrollTop: container.scrollTop, container })) {
         const timeoutId = setTimeout(() => {
-          bottomRef.current?.scrollIntoView({ behavior: "instant" });
+          bottomRef.current?.scrollIntoView({ behavior: "smooth" });
         }, 10);
 
         return () => clearTimeout(timeoutId);
@@ -56,7 +56,7 @@ const Messages = React.memo(function Messages() {
       {messages?.map((message) => (
         <div
           key={message.id}
-          className="mx-auto w-full md:!max-w-2xl max-w-sm lg:!max-w-4xl"
+          className="mx-auto w-full max-w-sm md:!max-w-2xl lg:!max-w-4xl"
         >
           {message.role === "user" ? (
             <UserMessageBubble message={message} />

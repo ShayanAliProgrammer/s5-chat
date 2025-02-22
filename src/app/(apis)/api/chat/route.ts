@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     const { messages, id } = await req.json();
 
     const result = streamText({
-        model: models['llama-3.1-8b-instant (Groq)'],
+        model: models['gemini-2.0-flash-exp (Google)'],
         messages,
 
         // maxTokens: 1000,
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
         maxSteps: 10,
 
         experimental_transform: smoothStream({
-            delayInMs: 30, // optional: defaults to 10ms
+            delayInMs: 20, // optional: defaults to 10ms
             chunking: 'line', // optional: defaults to 'word'
         }),
 

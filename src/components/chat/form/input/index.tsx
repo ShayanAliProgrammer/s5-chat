@@ -26,42 +26,13 @@ const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
       const textarea = textareaRef.current;
       if (!textarea) return;
 
-      const handleResize = () => {
-        textarea.style.height = "auto";
-        textarea.style.height = `${Math.min(textarea.scrollHeight, MAX_HEIGHT)}px`;
-      };
-
-      handleResize();
-      textarea.addEventListener("input", handleResize);
-
-      return () => {
-        textarea.removeEventListener("input", handleResize);
-      };
+      textarea.style.height = "auto";
+      textarea.style.height = `${Math.min(textarea.scrollHeight, MAX_HEIGHT)}px`;
     }, [value]);
-
-    // Keydown handler for Enter
-    useEffect(() => {
-      const textarea = textareaRef.current;
-      if (!textarea) return;
-      const handleKeyDown = (e: KeyboardEvent) => {
-        setTimeout(() => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            submitBtnRef.current?.click();
-            setError(null);
-          }
-        }, 10);
-      };
-
-      textarea.addEventListener("keydown", handleKeyDown);
-      return () => {
-        textarea.removeEventListener("keydown", handleKeyDown);
-      };
-    }, [setError]);
 
     return (
       <div className="w-full px-1">
-        <div className="relative mx-auto w-full max-w-5xl rounded-[22px] border border-border/5">
+        <div className="relative mx-auto w-full max-w-3xl rounded-[22px] border border-border/5">
           <div className="relative flex flex-col rounded-2xl border border-border/5 bg-muted">
             <div
               className="overflow-y-auto"
@@ -69,11 +40,19 @@ const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
             >
               <div className="relative">
                 <Textarea
-                  defaultValue={value}
+                  value={value}
+                  onChange={onChange}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      submitBtnRef.current?.click();
+                      setError(null);
+                    }
+                  }}
                   placeholder="Enter Message..."
                   className="resize-none rounded-2xl rounded-b-none border-none bg-muted px-4 py-3 leading-[1.2] focus-visible:ring-0"
                   ref={textareaRef}
-                  onChange={onChange}
+                  autoFocus
                 />
               </div>
             </div>
@@ -95,6 +74,7 @@ const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
       </div>
     );
   },
+  (prev, next) => prev.value === next.value,
 );
 
 const SubmitButton = React.memo(
@@ -135,7 +115,8 @@ const SubmitButton = React.memo(
                 textareaRef.current.value = "";
               }
             }}
-            variant={value ? "default" : "outline"}
+            variant={value.length > 0 ? "default" : "outline"}
+            disabled={value.length <= 0}
             className={cn("justify-center rounded-full")}
           >
             <CornerDownLeftIcon />
@@ -144,7 +125,9 @@ const SubmitButton = React.memo(
       </>
     );
   },
-  (prev, next) => prev.status == next.status,
+  (prev, next) =>
+    prev.status === next.status &&
+    prev.value.length > 0 === next.value.length > 0,
 );
 
 const ChatFormInput = React.memo(

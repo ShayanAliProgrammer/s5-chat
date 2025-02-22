@@ -45,7 +45,7 @@ export default React.memo(function AppSidebar() {
             </Button>
           </SidebarHeader>
 
-          <div className="flex h-full max-h-full flex-col gap-1 overflow-y-auto overflow-x-hidden border-t-2 px-2 pb-5 pt-3 *:flex-shrink-0">
+          <div className="flex h-full max-h-full flex-col gap-1 overflow-y-auto overflow-x-hidden border-t px-2 pb-5 pt-3 *:flex-shrink-0">
             <Chats />
           </div>
         </SidebarContent>

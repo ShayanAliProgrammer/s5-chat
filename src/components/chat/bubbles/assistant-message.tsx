@@ -42,16 +42,18 @@ const ToolInvocationDisclosure = React.memo(
           <DisclosureTrigger>
             <p
               onClick={toggleOpen}
-              className="mb-2 w-max cursor-pointer items-center gap-1 hover:underline"
+              className="!mb-0 flex w-max cursor-pointer items-center gap-x-2 !p-0 hover:underline"
             >
               <span>{part.toolInvocation.toolName}</span>
-              <CheckIcon className="ml-1 size-4 text-green-600 dark:text-green-400" />
+              <CheckIcon className="size-4 text-green-600 dark:text-green-400" />
             </p>
           </DisclosureTrigger>
           <DisclosureContent>
             <div className="border-b-2 text-sm">
               <p>Tool Result:</p>
-              <MarkdownProvider markdown={`\`\`\json\n${resultString}\n\`\`\``}>
+              <MarkdownProvider
+                markdown={`\`\`\`json\n${resultString}\n\`\`\``}
+              >
                 <MarkdownRenderer />
               </MarkdownProvider>
             </div>

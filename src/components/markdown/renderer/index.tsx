@@ -1,18 +1,24 @@
 "use client";
 
+import hljs from "highlight.js";
 import "highlight.js/styles/vs2015.min.css";
+import "katex/dist/katex.min.css";
 import { ClipboardCheckIcon, ClipboardIcon } from "lucide-react";
+import MarkdownIt from "markdown-it";
+import markdownItKatex from "markdown-it-katex";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import Markdown from "react-markdown";
-import rehypeHighlight from "rehype-highlight";
-import remarkGFM from "remark-gfm";
+import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
-import { extractTextFromNode } from "~/lib/utils";
+import { extractTextFromNode, getErrorMessage } from "~/lib/utils";
 import { useMarkdown } from "./context";
 
-// Define plugins outside to keep references stable
-const remarkPlugins = [remarkGFM];
-const rehypePlugins = [rehypeHighlight];
+// Initialize markdown-it with katex plugin
+const md = new MarkdownIt({
+  html: true, // Allow HTML in Markdown
+  linkify: true, // Autoconvert URLs to links
+  typographer: true, // Enable typographic replacements
+});
+md.use(markdownItKatex); // Add math rendering support
 
 // Comparator to avoid unnecessary re-renders for text-based components
 const areEqualText = (prevProps: any, nextProps: any) => {
@@ -21,7 +27,7 @@ const areEqualText = (prevProps: any, nextProps: any) => {
   );
 };
 
-// Memoized Markdown elements
+// Memoized Markdown Elements
 const MemoizedParagraph = React.memo(
   (props: any) => <p {...props} />,
   areEqualText,
@@ -63,80 +69,153 @@ const MemoizedOrderedList = React.memo(
   areEqualText,
 );
 
-// Optimized Pre component with copy functionality
-const MemoizedPre = React.memo(function Pre(props: any) {
+// Modified MemoizedPre to handle raw code and language
+const MemoizedPre = React.memo(function Pre({
+  code,
+  language,
+}: {
+  code: string;
+  language: string;
+}) {
   const [copied, setCopied] = useState(false);
-  const textRef = useRef<HTMLDivElement | null>(null);
+  const textRef = useRef<HTMLElement | null>(null);
   const timeoutRef = useRef<number | null>(null);
 
-  // Extract language from className
-  const language =
-    props.children?.props?.className?.split("language-")[1] || "plaintext";
-
-  // Copy text handler with memoization
   const copyText = useCallback(async () => {
     if (!textRef.current) return;
-
     try {
-      await window.navigator.clipboard.writeText(
-        textRef.current.textContent ?? "Error copying",
-      );
+      await window.navigator.clipboard.writeText(code);
       setCopied(true);
       timeoutRef.current = window.setTimeout(() => setCopied(false), 1000);
     } catch (error) {
       console.error("Copy failed:", error);
+      toast(getErrorMessage(error));
     }
-  }, []);
+  }, [code]);
 
-  // Cleanup to prevent memory leaks
   useEffect(() => {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
 
+  // Highlight code using highlight.js
+  const highlightedCode =
+    language && hljs.getLanguage(language)
+      ? hljs.highlight(code, { language }).value
+      : code;
+
   return (
-    <pre className="rounded-md border">
-      <div className="flex items-center justify-between rounded-t-md bg-muted px-3 py-2">
-        <p className="m-0 line-clamp-1 truncate text-sm">{language}</p>
+    <pre className="!relative !overflow-auto rounded-md border">
+      <div className="!sticky !inset-x-0 !top-0 flex items-center justify-between rounded-t-md bg-muted px-3 py-2">
+        <p className="m-0 line-clamp-1 truncate text-sm">
+          {language || "plaintext"}
+        </p>
         <div className="ml-auto size-max">
-          <Button size="icon" variant="ghost" onClick={copyText}>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={copyText}
+            aria-label={copied ? "Copied" : "Copy code"}
+          >
             {copied ? <ClipboardCheckIcon /> : <ClipboardIcon />}
           </Button>
         </div>
       </div>
-      <div ref={textRef} {...props} />
+      <div className="px-3 py-2">
+        <code
+          ref={textRef}
+          dangerouslySetInnerHTML={{ __html: highlightedCode }}
+        />
+      </div>
     </pre>
   );
-}, areEqualText);
+});
 
 // Component mapping for rendering markdown
-const componentsMapping = {
-  p: MemoizedParagraph,
+const componentsMapping: { [key: string]: React.ComponentType<any> } = {
   h1: MemoizedHeading1,
   h2: MemoizedHeading2,
   h3: MemoizedHeading3,
   h4: MemoizedHeading4,
   h5: MemoizedHeading5,
   h6: MemoizedHeading6,
+  p: MemoizedParagraph,
   li: MemoizedListItem,
   ul: MemoizedUnorderedList,
   ol: MemoizedOrderedList,
-  pre: MemoizedPre,
 };
+
+// Recursive function to render tokens to React components
+function renderTokens(tokens: any[], idx = 0): [React.ReactNode[], number] {
+  const elements: React.ReactNode[] = [];
+  while (idx < tokens.length) {
+    const token = tokens[idx];
+    if (token.nesting === 1) {
+      // Opening token (e.g., paragraph_open, heading_open)
+      const children: React.ReactNode[] = [];
+      idx++;
+      while (idx < tokens.length && tokens[idx].nesting !== -1) {
+        const [childElements, newIdx] = renderTokens(tokens, idx);
+        children.push(...childElements);
+        idx = newIdx;
+      }
+      if (idx < tokens.length && tokens[idx].nesting === -1) {
+        idx++; // Skip the closing token
+      }
+      let Component;
+      if (token.type === "paragraph_open") {
+        Component = MemoizedParagraph;
+      } else if (token.type.startsWith("heading_open")) {
+        const level = token.tag.slice(1); // e.g., "h1" from "heading_open" with tag "h1"
+        Component = componentsMapping[`h${level}`];
+      } else if (token.type === "bullet_list_open") {
+        Component = MemoizedUnorderedList;
+      } else if (token.type === "ordered_list_open") {
+        Component = MemoizedOrderedList;
+      } else if (token.type === "list_item_open") {
+        Component = MemoizedListItem;
+      }
+      if (Component) {
+        elements.push(<Component key={elements.length}>{children}</Component>);
+      }
+    } else if (token.nesting === 0) {
+      // Self-closing or standalone token
+      if (token.type === "inline") {
+        // Render inline content (text, links, math, etc.)
+        elements.push(
+          <span
+            key={elements.length}
+            dangerouslySetInnerHTML={{
+              __html: md.renderer.renderInline(token.children, md.options, {}),
+            }}
+          />,
+        );
+      } else if (token.type === "fence") {
+        // Render code blocks
+        const code = token.content;
+        const language = token.info;
+        elements.push(
+          <MemoizedPre key={elements.length} code={code} language={language} />,
+        );
+      } else if (token.type === "hr") {
+        elements.push(<hr key={elements.length} />);
+      }
+      idx++;
+    } else {
+      // Closing token, handled by the opening token logic
+      break;
+    }
+  }
+  return [elements, idx];
+}
 
 // Main Markdown Renderer Component
 const MarkdownRenderer: React.FC = React.memo(function MarkdownRenderer() {
   const markdown = useMarkdown();
-
-  return (
-    <Markdown
-      children={markdown}
-      remarkPlugins={remarkPlugins}
-      rehypePlugins={rehypePlugins}
-      components={componentsMapping}
-    />
-  );
+  const tokens = md.parse(markdown, {});
+  const [elements] = renderTokens(tokens);
+  return <div>{elements}</div>;
 });
 
 export default MarkdownRenderer;

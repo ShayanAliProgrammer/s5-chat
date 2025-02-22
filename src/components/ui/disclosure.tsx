@@ -1,5 +1,6 @@
 "use client";
 import {
+  AnimatePresence,
   motion,
   MotionConfig,
   Transition,
@@ -165,19 +166,19 @@ export function DisclosureContent({
 
   return (
     <div className={cn("overflow-hidden", className)}>
-      {/* <AnimatePresence initial={false}> */}
-      {open && (
-        <motion.div
-          id={uniqueId}
-          initial="collapsed"
-          animate="expanded"
-          exit="collapsed"
-          variants={combinedVariants}
-        >
-          {children}
-        </motion.div>
-      )}
-      {/* </AnimatePresence> */}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            id={uniqueId}
+            initial="collapsed"
+            animate="expanded"
+            exit="collapsed"
+            variants={combinedVariants}
+          >
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

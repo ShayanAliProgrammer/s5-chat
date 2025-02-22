@@ -10,9 +10,9 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const extractTextFromNode = (node: any): string => {
-  if (node.type === "text") return node.value;
-  if (node.children && Array.isArray(node.children))
-    return node.children.map(extractTextFromNode).join("");
+  if (node?.type === "text") return node?.value;
+  if (node?.children && Array.isArray(node?.children))
+    return node?.children?.map(extractTextFromNode)?.join("");
   return "";
 };
 

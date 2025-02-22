@@ -55,7 +55,7 @@ export default React.memo(function ChatLink({
   return (
     <Button
       asChild
-      variant="outline"
+      variant="ghost"
       className="group/chat-link relative w-full overflow-hidden p-0"
     >
       <li>
