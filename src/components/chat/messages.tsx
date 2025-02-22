@@ -1,7 +1,7 @@
 "use client";
 
 import { RefreshCcwIcon } from "lucide-react";
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import { getErrorMessage } from "~/lib/utils";
 import { Button } from "../ui/button";
 import AssistantMessageBubble from "./bubbles/assistant-message";
@@ -11,46 +11,8 @@ import { useChatContext } from "./context";
 const Messages = React.memo(function Messages() {
   const { messages, error, reload } = useChatContext();
 
-  // Refs for the message container and the bottom scroll reference
-  const containerRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-
-  const isNearBottom = React.useCallback(
-    ({
-      scrollTop,
-      container,
-    }: {
-      scrollTop: number;
-      container: HTMLDivElement;
-    }) => container.scrollHeight - (scrollTop + container.clientHeight) <= 100,
-
-    [],
-  );
-
-  function handleScroll() {
-    if (containerRef.current && bottomRef.current) {
-      const container = containerRef.current;
-
-      // If the user is near the bottom, scroll to the bottom
-      if (isNearBottom({ scrollTop: container.scrollTop, container })) {
-        // const timeoutId = setTimeout(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-        // }, 50);
-
-        // return () => clearTimeout(timeoutId);
-      }
-    }
-  }
-
-  useEffect(() => {
-    handleScroll();
-  }, [messages, status]);
-
   return (
-    <div
-      ref={containerRef}
-      className="flex min-h-[calc(100vh_-_210px)] w-full flex-col gap-3 overflow-y-auto px-3 pb-8 pt-4 md:min-h-[calc(100vh_-_140px)] lg:pb-10"
-    >
+    <div className="flex min-h-[calc(100vh_-_210px)] w-full flex-col gap-3 overflow-y-auto px-3 pb-8 pt-4 md:min-h-[calc(100vh_-_140px)] lg:pb-10">
       {messages?.map((message, index) => (
         <div
           key={message.id}
@@ -80,8 +42,6 @@ const Messages = React.memo(function Messages() {
           </div>
         </div>
       )}
-
-      <div ref={bottomRef} />
     </div>
   );
 });

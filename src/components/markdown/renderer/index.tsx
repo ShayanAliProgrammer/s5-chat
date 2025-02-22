@@ -1,5 +1,6 @@
 "use client";
 
+import "highlight.js";
 import hljs from "highlight.js";
 import "highlight.js/styles/vs2015.min.css";
 import "katex/dist/katex.min.css";
@@ -23,6 +24,9 @@ md.use(markdownItKatex); // Add math rendering support
 // Comparator to avoid unnecessary re-renders for text-based components
 const areEqualText = (prevProps: any, nextProps: any) => {
   return (
+    (typeof nextProps == "string" &&
+      typeof prevProps == "string" &&
+      prevProps == nextProps) ||
     extractTextFromNode(prevProps.node) === extractTextFromNode(nextProps.node)
   );
 };
@@ -99,11 +103,7 @@ const MemoizedPre = React.memo(function Pre({
     };
   }, []);
 
-  // Highlight code using highlight.js
-  const highlightedCode =
-    language && hljs.getLanguage(language)
-      ? hljs.highlight(code, { language }).value
-      : code;
+  const highlightedCode = hljs.highlightAuto(code);
 
   return (
     <pre className="!relative !overflow-auto rounded-md border">
