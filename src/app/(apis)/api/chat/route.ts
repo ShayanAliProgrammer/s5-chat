@@ -17,7 +17,7 @@ export async function POST(req: Request) {
         maxSteps: 10,
 
         experimental_transform: smoothStream({
-            delayInMs: 8, // optional: defaults to 10ms
+            delayInMs: 12, // optional: defaults to 10ms
             chunking: 'line', // optional: defaults to 'word'
         }),
 
