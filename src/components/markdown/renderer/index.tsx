@@ -4,7 +4,7 @@ import "highlight.js";
 import hljs from "highlight.js";
 import "highlight.js/styles/vs2015.min.css";
 import "katex/dist/katex.min.css";
-import { ClipboardCheckIcon, ClipboardIcon } from "lucide-react";
+import { CopyCheckIcon, CopyIcon } from "lucide-react";
 import MarkdownIt from "markdown-it";
 import markdownItKatex from "markdown-it-katex";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -103,11 +103,14 @@ const MemoizedPre = React.memo(function Pre({
     };
   }, []);
 
-  const highlightedCode = hljs.highlightAuto(code).value;
+  const highlightedCode =
+    language && hljs.getLanguage(language)
+      ? hljs.highlight(code, { language }).value
+      : hljs.highlightAuto(code).value;
 
   return (
-    <pre className="!relative !overflow-auto rounded-md border">
-      <div className="!sticky !inset-x-0 !top-0 flex items-center justify-between rounded-t-md bg-muted px-3 py-2">
+    <pre className="rounded-2xl border-2 !bg-muted">
+      <div className="!sticky !inset-x-0 !top-0 flex items-center justify-between px-3 py-2 [&_*]:text-foreground">
         <p className="m-0 line-clamp-1 truncate text-sm">
           {language || "plaintext"}
         </p>
@@ -118,11 +121,11 @@ const MemoizedPre = React.memo(function Pre({
             onClick={copyText}
             aria-label={copied ? "Copied" : "Copy code"}
           >
-            {copied ? <ClipboardCheckIcon /> : <ClipboardIcon />}
+            {copied ? <CopyCheckIcon /> : <CopyIcon />}
           </Button>
         </div>
       </div>
-      <div className="px-3 py-2">
+      <div className="!relative m-2 mt-1 !overflow-auto rounded-2xl !bg-[#1F1F1F] px-3 py-2">
         <code
           ref={textRef}
           dangerouslySetInnerHTML={{ __html: highlightedCode }}

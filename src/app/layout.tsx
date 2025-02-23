@@ -2,7 +2,9 @@ import "~/styles/globals.css";
 
 import { type Metadata } from "next";
 import { Toaster } from "~/components/ui/sonner";
+import { TooltipProvider } from "~/components/ui/tooltip";
 import { env } from "~/env";
+import { TRPCReactProvider } from "~/trpc/react";
 
 export const metadata: Metadata = {
   title: "S5 Chat - The Fastest AI ChatApp",
@@ -20,12 +22,16 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className="dark">
-      <body>
-        {children}
+    <TRPCReactProvider>
+      <TooltipProvider>
+        <html lang="en" className="dark h-svh w-svw">
+          <body>
+            {children}
 
-        <Toaster />
-      </body>
-    </html>
+            <Toaster />
+          </body>
+        </html>
+      </TooltipProvider>
+    </TRPCReactProvider>
   );
 }

@@ -1,10 +1,11 @@
 "use client";
 
-import { Loader2Icon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import AppSidebar, { AppSidebarTrigger } from "~/components/app-sidebar";
 import Chat from "~/components/chat";
 import { ChatProvider } from "~/components/chat/context";
+import { SidebarProvider } from "~/components/ui/sidebar";
 import { type Chat as ChatType, dxdb } from "~/lib/db/dexie";
 
 export default function ChatPage() {
@@ -20,17 +21,23 @@ export default function ChatPage() {
     }
   }, [chatId]);
 
-  if (!chat) {
-    return (
-      <div className="grid size-full place-items-center">
-        <Loader2Icon className="size-10 animate-spin" />
-      </div>
-    ); // Show loading until chat data is available
-  }
-
   return (
-    <ChatProvider chatId={chat.id}>
-      <Chat />
-    </ChatProvider>
+    <div className="flex size-full flex-col md:flex-row">
+      <SidebarProvider className="!h-max md:!h-full md:!w-max">
+        <AppSidebar />
+
+        <div className="fixed left-0 top-0 z-10 hidden p-2 md:inline-block">
+          <AppSidebarTrigger />
+        </div>
+      </SidebarProvider>
+
+      <main className="my-auto size-full h-max max-h-[calc(100svh_-_61px)] overflow-x-hidden md:max-h-svh">
+        {chat ? (
+          <ChatProvider chatId={chat.id}>
+            <Chat />
+          </ChatProvider>
+        ) : null}
+      </main>
+    </div>
   );
 }

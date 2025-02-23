@@ -14,6 +14,9 @@ export const env = createEnv({
 
     GOOGLE_SEARCH_VERIFICATION: z.string().optional(),
 
+    TURSO_DATABASE_URL: z.string().url(),
+    TURSO_AUTH_TOKEN: z.string(),
+
     NODE_ENV: z.enum(["development", "test", "production"]),
   },
 
@@ -37,6 +40,9 @@ export const env = createEnv({
     OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
 
     GOOGLE_SEARCH_VERIFICATION: process.env.GOOGLE_SEARCH_VERIFICATION,
+
+    TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL,
+    TURSO_AUTH_TOKEN: process.env.TURSO_AUTH_TOKEN,
 
     NODE_ENV: process.env.NODE_ENV,
   },

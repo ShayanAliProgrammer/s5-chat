@@ -38,7 +38,14 @@ interface ChatContextType {
   ) => Promise<string | null | undefined>;
   selectedModel: Model;
   setSelectedModel: (model: Model) => void;
+
+  chatId: string;
+  hasMore: boolean;
+  isLoading: boolean;
+  loadMoreMessages: () => Promise<void>;
 }
+
+const MESSAGES_PER_PAGE = 20; // Number of messages to load per chunk
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
@@ -51,6 +58,9 @@ export const ChatProvider: React.FC<{
   const [selectedModel, setSelectedModel] = useState<Model>(
     "deepseek-r1-distill-llama-70b (Groq)",
   );
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [page, setPage] = useState(1);
 
   const setError = useCallback((error: string | null) => {
     errorRef.current = error;
@@ -69,11 +79,79 @@ export const ChatProvider: React.FC<{
     reload: baseReload,
   } = useChat({
     id: chatId,
-    body: { model: selectedModel }, // Pass selected model to API
+    body: { model: selectedModel },
     onError(error) {
       setError(error.message);
     },
   });
+
+  const loadMoreMessages = useCallback(async () => {
+    if (isLoading || !hasMore) return;
+
+    setIsLoading(true);
+    try {
+      const result = await dxdb.getMessagesByChatId(
+        chatId,
+        page,
+        MESSAGES_PER_PAGE,
+      );
+
+      if (result.data.length === 0) {
+        setHasMore(false);
+        return;
+      }
+
+      const formattedMessages = result.data.map((message) => ({
+        // @ts-expect-error ignore next line
+        content: String(message.parts[message.parts.length - 1]!.text),
+        parts: message.parts,
+        id: message.id,
+        role: message.role,
+        createdAt: message.createdAt,
+      })) as Message[];
+
+      setMessages((prevMessages) => [...prevMessages, ...formattedMessages]);
+      setPage((prevPage) => prevPage + 1);
+      setHasMore(result.hasMore);
+    } catch (err) {
+      console.error("Error loading more messages:", err);
+      setError("Failed to load more messages");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [chatId, isLoading, hasMore, page, setMessages, setError]);
+
+  // Initial load of messages
+  useEffect(() => {
+    (async () => {
+      setIsLoading(true);
+      try {
+        const chat = await dxdb.chats.get(chatId);
+        if (!chat || !Array.isArray(chat.messages)) {
+          setHasMore(false);
+          return;
+        }
+
+        const initialMessages = chat.messages.slice(0, MESSAGES_PER_PAGE);
+        setMessages(
+          initialMessages.map((message) => ({
+            // @ts-expect-error ignore next line
+            content: String(message.parts[message.parts.length - 1]!.text),
+            parts: message.parts,
+            id: message.id,
+            role: message.role,
+            createdAt: message.createdAt,
+          })) as Message[],
+        );
+        setHasMore(initialMessages.length === MESSAGES_PER_PAGE);
+      } catch (err) {
+        console.error("Error loading initial messages:", err);
+        setError("Failed to load messages");
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, [chatId, setMessages, setError]);
 
   // Custom handleSubmit to include model
   const handleSubmit = useCallback(
@@ -100,23 +178,6 @@ export const ChatProvider: React.FC<{
     },
     [baseReload, selectedModel],
   );
-
-  // Load initial messages from the local database
-  useEffect(() => {
-    (async () => {
-      const localMessages = await dxdb.getMessagesByChatId(chatId);
-      setMessages(
-        localMessages.map((message) => ({
-          // @ts-expect-error ignore next line
-          content: String(message.parts[message.parts.length - 1]!.text),
-          parts: message.parts,
-          id: message.id,
-          role: message.role,
-          createdAt: message.createdAt,
-        })) as Message[],
-      );
-    })();
-  }, [chatId, setMessages]);
 
   // Stop streaming when chatId changes
   useEffect(() => {
@@ -166,6 +227,10 @@ export const ChatProvider: React.FC<{
       reload,
       selectedModel: selectedModel ?? "deepseek-r1-distill-llama-70b (Groq)",
       setSelectedModel,
+      chatId,
+      hasMore,
+      isLoading,
+      loadMoreMessages,
     }),
     [
       messages,
@@ -178,6 +243,10 @@ export const ChatProvider: React.FC<{
       stop,
       reload,
       selectedModel,
+      chatId,
+      hasMore,
+      isLoading,
+      loadMoreMessages,
     ],
   );
 

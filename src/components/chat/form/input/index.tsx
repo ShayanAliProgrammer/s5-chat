@@ -1,6 +1,6 @@
 "use client";
 
-import { CornerDownLeftIcon, MicIcon, SquareIcon } from "lucide-react";
+import { ArrowUpIcon, MicIcon, SquareIcon } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import {
@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
-import { AVAILABLE_MODELS } from "~/lib/ai/available-models";
+import { AVAILABLE_MODELS, Model } from "~/lib/ai/available-models";
 import { cn } from "~/lib/utils";
 import { useChatContext } from "../../context";
 
@@ -23,165 +23,192 @@ interface ChatFormInputProps {
   setError: (err: string | null) => void;
 }
 
-const MAX_HEIGHT = 240;
+const MAX_HEIGHT = 160;
 
 const SpeechRecognition =
   window.SpeechRecognition || window.webkitSpeechRecognition;
 const isSpeechSupported = !!SpeechRecognition;
 
-const ChatFormInputInner: React.FC<ChatFormInputProps> = React.memo(
-  function ChatFormInputInner({ value, onChange, status, stop, setError }) {
-    const { setSelectedModel, selectedModel } = useChatContext();
-    const submitBtnRef = useRef<HTMLButtonElement | null>(null);
-    const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-    const [isRecording, setIsRecording] = useState(false);
-    const recognitionRef = useRef<SpeechRecognition | null>(null);
+const ChatFormInputInner: React.FC = React.memo(function ChatFormInputInner() {
+  const {
+    input: value,
+    handleInputChange,
 
-    // Auto-resize effect
-    useEffect(() => {
-      const textarea = textareaRef.current;
-      if (!textarea) return;
+    status,
+    stop,
+    setError,
 
-      textarea.style.height = "auto";
-      textarea.style.height = `${Math.min(textarea.scrollHeight, MAX_HEIGHT)}px`;
-    }, [value]);
+    selectedModel,
+    setSelectedModel,
+  } = useChatContext();
 
-    // Initialize and handle speech recognition
-    const startRecording = () => {
-      if (!isSpeechSupported) {
-        setError("Speech recognition is not supported in this browser.");
-        return;
+  const submitBtnRef = useRef<HTMLButtonElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+  // Auto-resize effect
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, MAX_HEIGHT)}px`;
+  }, [value]);
+
+  // Initialize and handle speech recognition
+  const startRecording = () => {
+    if (!isSpeechSupported) {
+      setError("Speech recognition is not supported in this browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    recognition.onresult = (event) => {
+      let interimTranscript = "";
+      let finalTranscript = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i]![0]!.transcript;
+        if (event.results[i]!.isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
       }
 
-      const recognition = new SpeechRecognition();
-      recognitionRef.current = recognition;
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = "en-US";
-
-      recognition.onresult = (event) => {
-        let interimTranscript = "";
-        let finalTranscript = "";
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i]![0]!.transcript;
-          if (event.results[i]!.isFinal) {
-            finalTranscript += transcript;
-          } else {
-            interimTranscript += transcript;
-          }
-        }
-
-        const newValue = value + finalTranscript + interimTranscript;
-        onChange({
-          target: { value: newValue },
-        } as React.ChangeEvent<HTMLTextAreaElement>);
-      };
-
-      recognition.onerror = (event) => {
-        setError(`Speech recognition error: ${event.error}`);
-        setIsRecording(false);
-      };
-
-      recognition.onend = () => {
-        setIsRecording(false);
-      };
-
-      recognition.start();
-      setIsRecording(true);
+      const newValue = value + finalTranscript + interimTranscript;
+      handleInputChange({
+        target: { value: newValue },
+      } as React.ChangeEvent<HTMLTextAreaElement>);
     };
 
-    const stopRecording = () => {
+    recognition.onerror = (event) => {
+      setError(`Speech recognition error: ${event.error}`);
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognition.start();
+    setIsRecording(true);
+  };
+
+  const stopRecording = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
       if (recognitionRef.current) {
         recognitionRef.current.stop();
-        setIsRecording(false);
       }
     };
+  }, []);
 
-    useEffect(() => {
-      return () => {
-        if (recognitionRef.current) {
-          recognitionRef.current.stop();
-        }
-      };
-    }, []);
-
-    return (
-      <div className="w-full px-1">
-        <div className="relative mx-auto w-full max-w-3xl">
-          <div className="relative flex flex-col rounded-2xl border border-border bg-secondary">
-            <div
-              className="overflow-y-auto"
-              style={{ maxHeight: `${MAX_HEIGHT}px` }}
-            >
-              <div className="relative">
-                <Textarea
-                  value={value}
-                  onChange={onChange}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      submitBtnRef.current?.click();
-                      setError(null);
-                    }
-                  }}
-                  placeholder="Enter Message..."
-                  className="resize-none rounded-2xl rounded-b-none border-none bg-muted px-4 py-3 leading-[1.2] focus-visible:ring-0"
-                  ref={textareaRef}
-                  autoFocus
-                />
-              </div>
+  return (
+    <div className="w-full px-1">
+      <div className="relative mx-auto w-full max-w-3xl">
+        <div className="relative flex flex-col overflow-hidden rounded-3xl border border-border bg-secondary">
+          <div
+            className="overflow-y-auto"
+            style={{ maxHeight: `${MAX_HEIGHT}px` }}
+          >
+            <div className="relative">
+              <Textarea
+                value={value}
+                onChange={handleInputChange}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    submitBtnRef.current?.click();
+                    setError(null);
+                  }
+                }}
+                placeholder="Enter Message..."
+                className="resize-none rounded-b-none border-none bg-muted px-5 py-4 !text-base leading-[1.2] focus-visible:ring-0"
+                ref={textareaRef}
+                autoFocus
+              />
             </div>
+          </div>
 
-            <div className="h-12 w-full rounded-b-xl bg-muted dark:bg-muted">
-              <div className="flex items-center justify-between gap-2 px-3 pt-1">
-                {/* Model Selection */}
-                <Select value={selectedModel} onValueChange={setSelectedModel}>
-                  <Button asChild variant="outline">
-                    <SelectTrigger className="max-w-[200px] text-sm">
-                      <SelectValue placeholder="Select a model" />
-                    </SelectTrigger>
-                  </Button>
-                  <SelectContent className="max-h-40">
-                    {AVAILABLE_MODELS.map((model) => (
-                      <SelectItem key={model} value={model}>
-                        {model}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {/* Voice and Submit Buttons */}
-                <div className="flex items-center gap-2">
-                  {isSpeechSupported && (
-                    <Button
-                      type="button"
-                      size="icon"
-                      onClick={isRecording ? stopRecording : startRecording}
-                      className={cn("justify-center rounded-full", {
-                        "bg-red-600 hover:bg-red-700": isRecording,
-                      })}
-                      variant="ghost"
-                    >
-                      <MicIcon />
-                    </Button>
-                  )}
-                  <SubmitButton
-                    value={value}
-                    status={status}
-                    submitBtnRef={submitBtnRef}
-                    setError={setError}
-                    textareaRef={textareaRef}
-                    stop={stop}
-                  />
-                </div>
+          <div className="w-full rounded-b-xl bg-muted dark:bg-muted">
+            <div className="flex items-center justify-between gap-2 px-4 py-2 pb-3">
+              <ModelSelection
+                setSelectedModel={setSelectedModel}
+                selectedModel={selectedModel}
+              />
+
+              {/* Voice and Submit Buttons */}
+              <div className="flex items-center gap-2">
+                <MicButton
+                  isRecording={isRecording}
+                  startRecording={startRecording}
+                  stopRecording={stopRecording}
+                  isSpeechSupported={isSpeechSupported}
+                />
+
+                <SubmitButton
+                  value={value}
+                  status={status}
+                  submitBtnRef={submitBtnRef}
+                  setError={setError}
+                  textareaRef={textareaRef}
+                  stop={stop}
+                />
               </div>
             </div>
           </div>
         </div>
       </div>
+    </div>
+  );
+});
+
+const ModelSelection = React.memo(
+  function ModelSelection({
+    setSelectedModel,
+    selectedModel,
+  }: {
+    selectedModel: Model;
+    setSelectedModel: (model: Model) => void;
+  }) {
+    return (
+      <Select value={selectedModel} onValueChange={setSelectedModel}>
+        <Button asChild variant="outline">
+          <SelectTrigger className="h-max max-w-[250px] justify-between text-sm">
+            <SelectValue placeholder="Select a model" />
+          </SelectTrigger>
+        </Button>
+        <SelectContent className="max-h-60">
+          {AVAILABLE_MODELS.map((model) => (
+            <SelectItem key={model} value={model}>
+              <div className="flex flex-col gap-1 text-left">
+                <p>{model}</p>
+
+                <p className="text-xs text-muted-foreground">
+                  {/* model description */}
+                  Our Most capable model
+                </p>
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     );
   },
-  (prev, next) => prev.value === next.value && prev.status === next.status,
+  (prev, next) => prev.selectedModel == next.selectedModel,
 );
 
 const SubmitButton = React.memo(
@@ -226,7 +253,7 @@ const SubmitButton = React.memo(
             disabled={value.length <= 0}
             className={cn("justify-center rounded-full")}
           >
-            <CornerDownLeftIcon />
+            <ArrowUpIcon />
           </Button>
         )}
       </>
@@ -237,19 +264,41 @@ const SubmitButton = React.memo(
     prev.value.length > 0 === next.value.length > 0,
 );
 
-const ChatFormInput = React.memo(
-  function ChatFormInput(props: ChatFormInputProps) {
+const MicButton = React.memo(
+  function MicButton({
+    isSpeechSupported,
+    isRecording,
+    startRecording,
+    stopRecording,
+  }: {
+    isSpeechSupported: boolean;
+    isRecording: boolean;
+    startRecording: () => void;
+    stopRecording: () => void;
+  }) {
     return (
-      <ChatFormInputInner
-        onChange={props.onChange}
-        setError={props.setError}
-        status={props.status}
-        stop={props.stop}
-        value={props.value}
-      />
+      <>
+        {isSpeechSupported && (
+          <Button
+            type="button"
+            size="icon"
+            onClick={isRecording ? stopRecording : startRecording}
+            className="justify-center rounded-full"
+            variant={isRecording ? "default" : "ghost"}
+          >
+            <MicIcon />
+          </Button>
+        )}
+      </>
     );
   },
-  (prev, next) => prev.status === next.status && prev.value === next.value,
+  (prev, next) =>
+    prev.isSpeechSupported === next.isSpeechSupported &&
+    prev.isRecording === next.isRecording,
 );
+
+const ChatFormInput = React.memo(function ChatFormInput() {
+  return <ChatFormInputInner />;
+});
 
 export default ChatFormInput;

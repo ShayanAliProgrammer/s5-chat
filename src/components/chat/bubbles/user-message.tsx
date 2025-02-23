@@ -1,7 +1,6 @@
 import { UIMessage } from "ai";
-import { PencilIcon } from "lucide-react";
+import { CopyCheckIcon, CopyIcon, PencilLineIcon } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Message } from "~/lib/db/dexie";
 import { cn } from "~/lib/utils";
@@ -17,9 +16,9 @@ const UserMessageBubble = React.memo(
   }) {
     const { messages, setMessages, setError, reload } = useChatContext();
     const [isEditing, setIsEditing] = useState(false);
+    const [copied, setCopied] = useState(false);
     const [editedContent, setEditedContent] = useState(message.content);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const { chatId } = useParams();
 
     // Auto-resize the textarea based on content
     const autoResize = useCallback(() => {
@@ -94,62 +93,89 @@ const UserMessageBubble = React.memo(
       }
     }, [isEditing, editedContent, autoResize]);
 
-    return (
-      <div
-        className={cn(
-          "group relative ml-auto max-w-xs whitespace-pre-wrap rounded-3xl bg-muted/60 px-5 py-2.5 text-base lg:max-w-xl",
-          {
-            "w-max": !isEditing,
-          },
-        )}
-      >
-        {!isEditing ? (
-          <>
-            {/* Display message content */}
-            <p>{message.content}</p>
-            {/* Edit button (visible on hover) */}
-            <Button
-              onClick={handleEditStart}
-              className="absolute bottom-1 right-1 rounded-full opacity-0 transition-all group-hover:opacity-100"
-              aria-label="Edit message"
-              variant="ghost"
-              size="icon"
-            >
-              <PencilIcon />
-            </Button>
-          </>
-        ) : (
-          <>
-            {/* Edit mode with textarea */}
-            <textarea
-              ref={textareaRef}
-              value={editedContent}
-              onChange={handleChange}
-              onKeyDown={handleKeyDown}
-              className="min-h-[2.5rem] !w-full resize-none bg-transparent outline-none md:min-w-96" // Changed resize-y to resize-none
-              placeholder="Type your message..."
-            />
-            {/* Save and Cancel buttons */}
-            <div className="mt-2 flex flex-row-reverse items-center justify-start gap-2">
-              <Button
-                onClick={handleSave}
-                aria-label="Save changes"
-                className="!size-max rounded-full"
-              >
-                Submit
-              </Button>
+    const copyText = useCallback(() => {
+      if (typeof window == "undefined") return;
 
-              <Button
-                onClick={handleCancel}
-                variant="outline"
-                aria-label="Cancel editing"
-                className="!size-max rounded-full"
-              >
-                Cancel
-              </Button>
-            </div>
-          </>
-        )}
+      window.navigator.clipboard
+        .writeText(message.content)
+        .then(() => {
+          setCopied(true);
+        })
+        .catch(() => setCopied(false))
+        .finally(() => {
+          setTimeout(() => {
+            setCopied(false);
+          }, 1000);
+        });
+    }, [message.content]);
+
+    return (
+      <div className="group ml-auto flex w-full flex-col-reverse justify-end gap-1 md:w-max">
+        <div className="ml-auto flex !w-max justify-end opacity-0 transition-all group-hover:opacity-100">
+          <Button
+            onClick={handleEditStart}
+            aria-label="Edit message"
+            variant="ghost"
+            className="size-7"
+            size="icon"
+          >
+            <PencilLineIcon />
+          </Button>
+
+          <Button
+            onClick={copyText}
+            aria-label="Edit message"
+            variant="ghost"
+            className="size-7"
+            size="icon"
+          >
+            {copied ? <CopyCheckIcon /> : <CopyIcon />}
+          </Button>
+        </div>
+
+        <div
+          className={cn(
+            "relative w-full max-w-xs overflow-auto whitespace-pre-wrap rounded-2xl rounded-br-lg rounded-tr-3xl border border-border/50 bg-muted p-5 text-base lg:max-w-xl",
+            {
+              "py-2.5": !isEditing,
+            },
+          )}
+        >
+          {!isEditing ? (
+            message.content
+          ) : (
+            <>
+              {/* Edit mode with textarea */}
+              <textarea
+                ref={textareaRef}
+                value={editedContent}
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                className="min-h-[2.5rem] !w-full resize-none bg-transparent outline-none md:min-w-96"
+                placeholder="Type your message..."
+              />
+              {/* Save and Cancel buttons */}
+              <div className="mt-2 flex flex-row-reverse items-center justify-start gap-x-2">
+                <Button
+                  onClick={handleSave}
+                  aria-label="Save changes"
+                  className="!size-max rounded-full"
+                >
+                  Submit
+                </Button>
+
+                <Button
+                  onClick={handleCancel}
+                  variant="outline"
+                  aria-label="Cancel editing"
+                  className="!size-max rounded-full"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     );
   },

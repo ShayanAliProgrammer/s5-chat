@@ -30,6 +30,12 @@ export type Chat = {
   updatedAt: Date;
 };
 
+interface PaginationResult<T> {
+  data: T[];
+  hasMore: boolean;
+  total: number;
+}
+
 class Database extends Dexie {
   chats!: Table<Chat, string>;
 
@@ -41,24 +47,82 @@ class Database extends Dexie {
     });
   }
 
-  // Create a new chat.
+  // Get paginated messages for a chat
+  async getMessagesByChatId(
+    chatId: string,
+    page: number = 1,
+    pageSize: number = 20,
+  ): Promise<PaginationResult<Message>> {
+    const chat = await this.chats.get(chatId);
+
+    if (!chat || !Array.isArray(chat.messages)) {
+      return {
+        data: [],
+        hasMore: false,
+        total: 0,
+      };
+    }
+
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+
+    // Get total count
+    const total = chat.messages.length;
+
+    // Get slice of messages for current page
+    const messages = chat.messages
+      .slice(start, end)
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+
+    return {
+      data: messages,
+      hasMore: end < total,
+      total,
+    };
+  }
+
+  // Get paginated chats
+  async getAllChats(
+    page: number = 1,
+    pageSize: number = 20,
+  ): Promise<PaginationResult<Chat>> {
+    const total = await this.chats.count();
+
+    const chats = await this.chats
+      .orderBy("updatedAt")
+      .reverse()
+      .offset((page - 1) * pageSize)
+      .limit(pageSize)
+      .toArray();
+
+    return {
+      data: chats,
+      hasMore: page * pageSize < total,
+      total,
+    };
+  }
+
+  // Create a new chat
   async createChat(chatId: string): Promise<Chat> {
     const newChat: Chat = {
       title: "New Chat",
       id: chatId,
       createdAt: new Date(),
       updatedAt: new Date(),
-      messages: [], // initially empty; messages will be stored in the messages table.
+      messages: [],
     };
     await this.chats.add(newChat);
     return newChat;
   }
 
-  // Add a message to an existing chat.
+  // Add a message to an existing chat
   async addMessageToChat(
     chatId: string,
     message: TextUIPart | ToolInvocationUIPart,
-    role: "user" | "assistant" | "system" | "data" = "user", // Allow specifying role
+    role: "user" | "assistant" | "system" | "data" = "user",
   ): Promise<void> {
     const chat = await this.chats.get(chatId);
     if (!chat) {
@@ -66,7 +130,7 @@ class Database extends Dexie {
     }
 
     const newMessage: Message = {
-      id: `${chatId}-${Date.now()}`, // A simple way to create a unique message id.
+      id: `${chatId}-${Date.now()}`,
       chatId,
       content: "",
       createdAt: new Date(),
@@ -74,43 +138,75 @@ class Database extends Dexie {
       parts: [message],
     };
 
-    // Instead of creating a new array with spread, push the new message directly.
-    if (Array.isArray(chat.messages)) {
-      chat.messages.push(newMessage);
-    } else {
-      chat.messages = [newMessage];
+    if (!Array.isArray(chat.messages)) {
+      chat.messages = [];
     }
-    // Update the chat's updatedAt timestamp.
+
+    chat.messages.push(newMessage);
     chat.updatedAt = new Date();
+
     await this.chats.put(chat);
   }
 
-  async getMessagesByChatId(chatId: string): Promise<Message[]> {
-    return (await this.chats.where("id").equals(chatId).toArray())[0]!.messages;
-  }
-
-  // Delete a chat and its associated messages.
+  // Delete a chat
   async deleteChat(chatId: string): Promise<void> {
     await this.chats.delete(chatId);
   }
 
-  // Retrieve all chats.
-  async getAllChats(): Promise<Chat[]> {
-    return this.chats.orderBy("updatedAt").reverse().toArray();
-  }
+  // Get a single chat by ID with optional message pagination
+  async getChatById(
+    id: string,
+    page: number = 1,
+    pageSize: number = 20,
+  ): Promise<Chat | undefined> {
+    const chat = await this.chats.get(id);
 
-  // In Dexie DB methods (assumes you have a 'chats' store in Dexie)
-  async getChatById(id: string) {
-    const chat = await dxdb.chats.get(id);
+    if (chat && Array.isArray(chat.messages)) {
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize;
+      chat.messages = chat.messages.slice(start, end);
+    }
+
     return chat;
   }
 
-  async updateChatTitle(id: string, title: string) {
-    await dxdb.chats.update(id, { title });
+  // Update chat title
+  async updateChatTitle(id: string, title: string): Promise<void> {
+    await this.chats.update(id, { title });
+  }
+
+  // Search chats with pagination
+  async searchChats(
+    query: string,
+    page: number = 1,
+    pageSize: number = 20,
+  ): Promise<PaginationResult<Chat>> {
+    const queryLower = query.toLowerCase();
+
+    // Get all chats that match the search query
+    const matchingChats = await this.chats
+      .filter(
+        (chat) =>
+          chat.title.toLowerCase().includes(queryLower) ||
+          chat.messages.some((msg) =>
+            msg.content.toLowerCase().includes(queryLower),
+          ),
+      )
+      .toArray();
+
+    const total = matchingChats.length;
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+
+    return {
+      data: matchingChats.slice(start, end),
+      hasMore: end < total,
+      total,
+    };
   }
 }
 
-// Export a single instance of the Database.
+// Export a single instance of the Database
 export const dxdb = new Database();
 
 if (typeof window !== "undefined") {
