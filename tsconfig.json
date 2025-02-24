@@ -23,6 +23,8 @@
     "plugins": [{ "name": "next" }],
     "incremental": true,
 
+    "rootDir": ".",
+
     /* Path Aliases */
     "baseUrl": ".",
     "paths": {
