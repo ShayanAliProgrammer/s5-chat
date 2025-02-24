@@ -110,7 +110,7 @@ const UserMessageBubble = React.memo(
     }, [message.content]);
 
     return (
-      <div className="group ml-auto flex w-full flex-col-reverse justify-end gap-1 md:w-max">
+      <div className="group ml-auto flex w-max flex-col-reverse justify-end gap-1">
         <div className="ml-auto flex !w-max justify-end opacity-0 transition-all group-hover:opacity-100">
           <Button
             onClick={handleEditStart}
