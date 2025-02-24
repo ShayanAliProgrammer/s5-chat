@@ -103,7 +103,7 @@ const AssistantMessageBubble = React.memo(
 
     return (
       <div className="group" data-markdown={message.content}>
-        <div className="mr-auto w-full max-w-full p-5 pb-0">
+        <div className="mr-auto w-full max-w-full px-5">
           <div className="prose prose-base !max-w-full dark:prose-invert">
             <MessageParts parts={parts} />
           </div>
